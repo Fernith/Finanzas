@@ -35,7 +35,7 @@ pub async fn obtener_balance_anual(
             c.color as "color!"
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
-        WHERE EXTRACT(YEAR FROM o.fecha) = $1 AND o.estado = true
+        WHERE EXTRACT(YEAR FROM o.fecha) = $1 AND o.pendiente = false
         ORDER BY o.fecha ASC
         "#,
         filtro.anio as f64

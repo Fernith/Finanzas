@@ -5,3 +5,4 @@ pub mod balance;
 pub mod ahorros;
 pub mod inversiones;
 pub mod liquidez;
+pub mod configuracion;

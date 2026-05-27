@@ -1,31 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Settings, Plus, Pencil, Trash2, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
-import ModalAjusteMaestro from '../components/ModalAjusteMaestro';
-import ModalConfirmacion from '../components/ModalConfirmacion';
+import { Settings, LayoutGrid } from 'lucide-react';
+import ModalAjusteMaestro from '../components/ModalAjusteMaestro'; 
+import ModalConfirmacion from '../components/ModalConfirmacion'; 
+import ColumnaCatalogo from '../components/ajustes/ColumnaCatalogo';
+import ComportamientoApp from '../components/ajustes/ComportamientoApp';
 
 export default function Ajustes() {
+  const [activeTab, setActiveTab] = useState('general');
+  const [usarPendientes, setUsarPendientes] = useState(false);
+  const [guardandoConfig, setGuardandoConfig] = useState(false);
+
   const [categorias, setCategorias] = useState<any[]>([]);
   const [cuentas, setCuentas] = useState<any[]>([]);
-
   const [modalOpen, setModalOpen] = useState(false);
   const [targetModal, setTargetModal] = useState<'categorias' | 'cuentas'>('categorias');
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
-
-  // ESTADO MEJORADO: Ahora sabe si la acción es activar o desactivar
-  const [accionConfirmacion, setAccionConfirmacion] = useState<{ 
-    target: 'categorias' | 'cuentas', 
-    id: string, 
-    nombre: string, 
-    tipo: 'activar' | 'desactivar' 
-  } | null>(null);
+  const [accionConfirmacion, setAccionConfirmacion] = useState<{ target: 'categorias' | 'cuentas', id: string, nombre: string, tipo: 'activar' | 'desactivar' } | null>(null);
 
   const cargarCategorias = () => fetch('/api/ajustes/categorias').then(res => res.json()).then(data => setCategorias(data));
   const cargarCuentas = () => fetch('/api/ajustes/cuentas').then(res => res.json()).then(data => setCuentas(data));
+  const cargarConfiguracion = () => fetch('/api/configuracion').then(res => res.json()).then(data => setUsarPendientes(data.usar_pendientes));
 
   useEffect(() => {
+    cargarConfiguracion();
     cargarCategorias();
     cargarCuentas();
   }, []);
+
+  const handleToggleConfirmado = async (nuevoEstado: boolean) => {
+    setGuardandoConfig(true);
+    try {
+      const res = await fetch('/api/configuracion', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usar_pendientes: nuevoEstado })
+      });
+      if (res.ok) setUsarPendientes(nuevoEstado);
+    } catch {
+      alert("Error al actualizar la configuración");
+    } finally {
+      setGuardandoConfig(false);
+    }
+  };
 
   const handleAbrirAlta = (target: 'categorias' | 'cuentas') => {
     setTargetModal(target);
@@ -39,17 +55,15 @@ export default function Ajustes() {
     setModalOpen(true);
   };
 
-  // Lógica unificada para el modal de confirmación
+  const handleToggleStatus = (target: 'categorias' | 'cuentas', id: string, nombre: string, tipo: 'activar' | 'desactivar') => {
+    setAccionConfirmacion({ target, id, nombre, tipo });
+  };
+
   const ejecutarAccionConfirmada = async () => {
     if (!accionConfirmacion) return;
-    
     const { target, id, tipo } = accionConfirmacion;
     
-    // Si desactivamos enviamos DELETE a /:id, si activamos enviamos PUT a /:id/activar
-    const url = tipo === 'desactivar' 
-      ? `/api/ajustes/${target}/${id}`
-      : `/api/ajustes/${target}/${id}/activar`;
-      
+    const url = tipo === 'desactivar' ? `/api/ajustes/${target}/${id}` : `/api/ajustes/${target}/${id}/activar`;
     const method = tipo === 'desactivar' ? 'DELETE' : 'PUT';
 
     try {
@@ -66,82 +80,14 @@ export default function Ajustes() {
     }
   };
 
-  const renderColumnaMaestra = (titulo: string, items: any[], target: 'categorias' | 'cuentas') => (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col overflow-hidden h-full">
-      <div className="p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800 dark:text-white">{titulo}</h2>
-        <button 
-          onClick={() => handleAbrirAlta(target)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shadow-blue-500/10 active:scale-95"
-        >
-          <Plus size={14} /> Añadir
-        </button>
-      </div>
-      
-      <div className="divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto max-h-[500px]">
-        {items.length > 0 ? (
-          items.map(item => (
-            <div key={item.id} className={`p-4 flex justify-between items-center transition-colors ${!item.activo ? 'opacity-50 bg-slate-50/40 dark:bg-slate-900/20' : 'hover:bg-slate-50/30 dark:hover:bg-slate-800/20'}`}>
-              <div className="flex items-center gap-3">
-                <span className="w-4 h-4 rounded-full shadow-inner border border-black/10 shrink-0" style={{ backgroundColor: item.color }}></span>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.nombre}</p>
-                  
-                  <div className="flex gap-1 mt-1 flex-wrap">
-                    {/* Renderizado para Categorías (String simple) */}
-                    {typeof item.tipo_operacion_id === 'string' && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${item.tipo_operacion_id === 'GASTO' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : item.tipo_operacion_id === 'INGRESO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>
-                        {item.tipo_operacion_id}
-                      </span>
-                    )}
-
-                    {/* Renderizado para Cuentas (Array de Strings) */}
-                    {Array.isArray(item.tipos_operacion) && item.tipos_operacion.map((tipo: string) => (
-                      <span key={tipo} className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${tipo === 'GASTO' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : tipo === 'INGRESO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>
-                        {tipo}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {item.activo ? (
-                  <span className="text-emerald-500" title="Activo"><CheckCircle size={14} /></span>
-                ) : (
-                  <span className="text-slate-400 flex items-center gap-1 text-[11px] font-medium" title="Inactivo"><XCircle size={14} /> Inactivo</span>
-                )}
-                
-                <button onClick={() => handleAbrirEdicion(target, item)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-colors" title="Editar"><Pencil size={15} /></button>
-                
-                {/* BOTÓN DINÁMICO: Eliminar (Papelera) si está activo, Reactivar (Flecha) si está inactivo */}
-                {item.activo ? (
-                  <button 
-                    onClick={() => setAccionConfirmacion({ target, id: item.id, nombre: item.nombre, tipo: 'desactivar' })} 
-                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors" title="Desactivar"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => setAccionConfirmacion({ target, id: item.id, nombre: item.nombre, tipo: 'activar' })} 
-                    className="p-1.5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg transition-colors" title="Reactivar"
-                  >
-                    <RotateCcw size={15} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="p-8 text-center text-slate-400 text-sm">No hay registros definidos.</div>
-        )}
-      </div>
-    </div>
-  );
+  const tabs = [
+    { id: 'general', label: 'General', icon: <LayoutGrid size={18} /> },
+    { id: 'futuro', label: 'Futuros Ajustes', icon: <Settings size={18} /> },
+  ];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 w-full max-w-[1400px] mx-auto">
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-gradient-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/20 rounded-2xl shadow-sm border border-blue-200/50 dark:border-blue-800/50">
@@ -149,25 +95,56 @@ export default function Ajustes() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Ajustes Generales</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configura y personaliza tus categorías y métodos de cuenta</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Configura y personaliza tu entorno de finanzas</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-        {renderColumnaMaestra('Catálogo de Categorías', categorias, 'categorias')}
-        {renderColumnaMaestra('Catálogo de Cuentas Financieras', cuentas, 'cuentas')}
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-px">
+        {tabs.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all border-b-2 ${activeTab === tab.id ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'} rounded-t-xl`}>
+            {tab.icon} {tab.label}
+          </button>
+        ))}
       </div>
+
+      {activeTab === 'general' && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-300">
+          
+          <ComportamientoApp 
+            usarPendientes={usarPendientes} 
+            guardandoConfig={guardandoConfig} 
+            onToggleConfirmado={handleToggleConfirmado} 
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            <ColumnaCatalogo 
+              titulo="Catálogo de Categorías" items={categorias} target="categorias" 
+              onAdd={handleAbrirAlta} onEdit={handleAbrirEdicion} onToggleStatus={handleToggleStatus} 
+            />
+            <ColumnaCatalogo 
+              titulo="Catálogo de Cuentas Financieras" items={cuentas} target="cuentas" 
+              onAdd={handleAbrirAlta} onEdit={handleAbrirEdicion} onToggleStatus={handleToggleStatus} 
+            />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'futuro' && (
+        <div className="animate-in slide-in-from-bottom-2 duration-300 p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-slate-400">
+          Esta pestaña está reservada para futuras configuraciones.
+        </div>
+      )}
 
       <ModalAjusteMaestro 
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
+        // CORREGIDO: Vuelve a ejecutar la función correcta según la pestaña abierta
         onSuccess={targetModal === 'categorias' ? cargarCategorias : cargarCuentas}
         target={targetModal}
         itemAEditar={itemSeleccionado}
       />
 
-      {/* MODAL DE CONFIRMACIÓN DINÁMICO */}
       <ModalConfirmacion 
         isOpen={!!accionConfirmacion} 
         onClose={() => setAccionConfirmacion(null)} 

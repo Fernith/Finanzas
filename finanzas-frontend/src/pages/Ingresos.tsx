@@ -1,202 +1,160 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Plus, TrendingUp, Wallet } from 'lucide-react';
-import { PieChart, Pie, Tooltip, ResponsiveContainer } from 'recharts';
-import MonthYearSelector from '../components/SelectorMesAno';
+import { useState, useEffect, useMemo } from 'react';
+import { TrendingUp, Plus, Wallet, Clock } from 'lucide-react';
+import { PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 import TransactionTable, { type Column } from '../components/TransactionTable';
-import ModalAgregarIngreso from '../components/ModalAgregarIngreso';
-import { formatearMoneda } from '../utils/formatters';
 import ModalConfirmacion from '../components/ModalConfirmacion';
+import ModalAgregarIngreso from '../components/ModalAgregarIngreso'; 
+import { formatearMoneda } from '../utils/formatters';
 
 export default function Ingresos() {
-  const fechaActual = new Date();
-  const [mesActual, setMesActual] = useState(fechaActual.getMonth() + 1);
-  const [añoActual, setAñoActual] = useState(fechaActual.getFullYear());
-  const [busquedaGlobal, setBusquedaGlobal] = useState('');
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [ingresoSeleccionadoEditar, setIngresoSeleccionadoEditar] = useState<any>(null);
-
   const [ingresos, setIngresos] = useState<any[]>([]);
-  const [categorias, setCategorias] = useState<any[]>([]);
-  const [cuentas, setCuentas] = useState<any[]>([]);
-
-  // NUEVO: La columna extra para ingresos añadida a la tabla
-  const columnasIngresos: Column[] = [
-    { key: 'fecha', label: 'Fecha', sortable: true },
-    { key: 'cantidad', label: 'Cantidad', sortable: true },
-    { key: 'categoria', label: 'Categoría', filterable: true },
-    { key: 'cuenta', label: 'Cuenta', filterable: true },
-    { key: 'campo_extra_ingreso', label: 'Info Extra' },
-    { key: 'descripcion', label: 'Descripción' }
-  ];
-
-  const totalIngresadoMes = useMemo(() => {
-    return ingresos.reduce((acc, curr) => acc + Number(curr.cantidad), 0);
-  }, [ingresos]);
-
-  useEffect(() => {
-    fetch('/api/categorias/ingresos').then(res => res.json()).then(data => setCategorias(data));
-    fetch('/api/cuentas/ingresos').then(res => res.json()).then(data => setCuentas(data));
-  }, []);
-
-  const cargarIngresosDelServidor = useCallback(() => {
-    fetch(`/api/ingresos?mes=${mesActual}&anio=${añoActual}&buscar=${busquedaGlobal}`)
-      .then(res => res.json())
-      .then(data => setIngresos(data))
-      .catch(() => setIngresos([]));
-  }, [mesActual, añoActual, busquedaGlobal]);
-
-  useEffect(() => {
-    cargarIngresosDelServidor();
-  }, [cargarIngresosDelServidor]);
-
+  const [usarPendientes, setUsarPendientes] = useState(false);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [ingresoAEditar, setIngresoAEditar] = useState<any>(null);
   const [idAEliminar, setIdAEliminar] = useState<string | null>(null);
 
-  const handleEliminarIngreso = (id: string) => {
-    setIdAEliminar(id);
+  const cargarIngresos = () => {
+    fetch('/api/configuracion').then(res => res.json()).then(data => setUsarPendientes(data.usar_pendientes));
+    fetch('/api/ingresos').then(res => res.json()).then(data => setIngresos(data)).catch(() => setIngresos([]));
   };
+
+  useEffect(() => { cargarIngresos(); }, []);
+
+  const { datosGrafico, totalIngresadoReal, totalIngresadoConPendientes } = useMemo(() => {
+    const agrupado: Record<string, { valor: number, color: string }> = {};
+    let totalReal = 0;
+    let totalConPend = 0;
+
+    ingresos.forEach(i => {
+      const cantidad = Number(i.cantidad);
+      totalConPend += cantidad;
+
+      if (!i.pendiente) {
+        totalReal += cantidad;
+      }
+
+      // La gráfica ignora los cobros pendientes
+      if (usarPendientes && i.pendiente) return;
+
+      if (!agrupado[i.categoria]) {
+        agrupado[i.categoria] = { valor: 0, color: i.color };
+      }
+      agrupado[i.categoria].valor += cantidad;
+    });
+
+    const datos = Object.entries(agrupado)
+      .map(([name, data]) => ({ name, value: data.valor, color: data.color, fill: data.color }))
+      .sort((a, b) => b.value - a.value);
+
+    return { datosGrafico: datos, totalIngresadoReal: totalReal, totalIngresadoConPendientes: totalConPend };
+  }, [ingresos, usarPendientes]);
+
+  const columns: Column[] = [
+    { key: 'fecha', label: 'FECHA', sortable: true },
+    { key: 'cantidad', label: 'CANTIDAD', sortable: true },
+    { key: 'categoria', label: 'CATEGORÍA', sortable: true, filterable: true },
+    { key: 'cuenta', label: 'CUENTA', sortable: true, filterable: true },
+    { key: 'notas', label: 'DESCRIPCIÓN', sortable: false }
+  ];
 
   const confirmarEliminacion = async () => {
     if (!idAEliminar) return;
     try {
       const res = await fetch(`/api/ingresos/${idAEliminar}`, { method: 'DELETE' });
-      if (res.ok) cargarIngresosDelServidor();
-      else alert('No se pudo eliminar el ingreso.');
-    } catch {
-      alert('Error de conexión.');
-    }
+      if (res.ok) cargarIngresos();
+    } catch { alert('Error de conexión.'); } finally { setIdAEliminar(null); }
   };
 
-  const handleAbrirEdicion = (ingreso: any) => {
-    setIngresoSeleccionadoEditar(ingreso);
-    setModalAbierto(true);
+  const handleActivarOperacion = async (id: string) => {
+    try {
+      const res = await fetch(`/api/operaciones/${id}/completar`, { method: 'PUT' });
+      if (res.ok) cargarIngresos();
+    } catch { alert('Error al activar la operación'); }
   };
-
-  const datosGrafico = useMemo(() => {
-    const totales: Record<string, number> = {};
-    ingresos.forEach(ing => {
-      totales[ing.categoria] = (totales[ing.categoria] || 0) + Number(ing.cantidad);
-    });
-    return Object.entries(totales)
-      .map(([name, value]) => {
-        const catBBDD = categorias.find(c => c.nombre === name);
-        return { name, value, fill: catBBDD?.color || '#94a3b8' };
-      })
-      .sort((a, b) => b.value - a.value);
-  }, [ingresos, categorias]);
-
-  const categoriasActivas = useMemo(() => categorias.filter(c => c.activo !== false), [categorias]);
-  const cuentasActivas = useMemo(() => cuentas.filter(c => c.activo !== false), [cuentas]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 w-full max-w-[1600px] mx-auto">
       
-      {/* CABECERA (Tonos esmeralda) */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-emerald-100 to-teal-200 dark:from-emerald-900/40 dark:to-teal-900/20 rounded-2xl shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
-            <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={32} />
-          </div>
+      <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div className="p-3 bg-gradient-to-br from-emerald-100 to-teal-200 dark:from-emerald-900/40 rounded-2xl border border-emerald-200/50">
+          <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={32} />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Mis Ingresos</h1>
+          <p className="text-sm text-slate-500 mt-1">Controla y analiza tus entradas de dinero</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl min-w-[240px] flex items-center gap-6 shadow-sm">
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 rounded-xl"><Wallet size={32} /></div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Mis Ingresos</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Registra y monitorea tus fuentes de dinero</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Ingresado Real</p>
+            <p className="text-3xl font-black text-emerald-600 dark:text-emerald-500">{formatearMoneda(totalIngresadoReal)} €</p>
           </div>
         </div>
+
+        {usarPendientes && (
+          <div className="bg-white dark:bg-slate-900 border border-emerald-200/60 dark:border-emerald-900/30 p-6 rounded-2xl min-w-[240px] flex items-center gap-6 shadow-sm border-dashed">
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-xl"><Clock size={32} /></div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Estimado (Con Pendientes)</p>
+              <p className="text-2xl font-black text-slate-700 dark:text-slate-300">{formatearMoneda(totalIngresadoConPendientes)} €</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* TARJETA DE TOTAL ACUMULADO DINÁMICA (Verde) */}
-      <div className="w-full md:w-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm flex items-center justify-center gap-6 transition-all duration-300">
-        <div className="p-4 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-          <Wallet size={40} />
-        </div>
-        <div className="flex flex-col justify-center">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.15em] text-center sm:text-left">
-            {busquedaGlobal ? 'Total Búsqueda' : 'Total ingresado este mes'}
-          </p>
-          <p className="text-4xl sm:text-6xl font-black text-emerald-600 dark:text-emerald-500 mt-1 tabular-nums text-center sm:text-left">
-            {formatearMoneda(totalIngresadoMes)} <span className="text-xl sm:text-2xl font-bold ml-1">€</span>
-            </p>
-        </div>
-      </div>
-
-      {/* CONTENIDO PRINCIPAL */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        <div className="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white">Listado de Transacciones</h2>
+            <button onClick={() => { setIngresoAEditar(null); setModalAbierto(true); }} className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl shadow-md">
+              <Plus size={16} /> Agregar Ingreso
+            </button>
+          </div>
           
-          <div className="p-5 border-b border-slate-200 dark:border-slate-800 shrink-0 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-5">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Listado de Ingresos</h2>
-              <button 
-                onClick={() => { setIngresoSeleccionadoEditar(null); setModalAbierto(true); }}
-                className="flex items-center justify-center w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-700 dark:to-emerald-800 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-emerald-500/30 active:scale-95 transition-all border border-emerald-400/20"
-              >
-                <Plus size={20} className="mr-2" /> Agregar Ingreso
-              </button>
-            </div>
-            <div className="flex w-full overflow-x-auto pb-1 sm:pb-0">
-              <MonthYearSelector mesSeleccionado={mesActual} añoSeleccionado={añoActual} onMesChange={setMesActual} onAñoChange={setAñoActual} />
-            </div>
-          </div>
-
-          <div className="w-full">
-            <TransactionTable 
-              columns={columnasIngresos} 
-              data={ingresos} 
-              colorTheme="emerald" 
-              categoriasDisponibles={categoriasActivas.map(c => c.nombre)}
-              cuentasDisponibles={cuentasActivas.map(c => c.nombre)}
-              onGlobalSearch={setBusquedaGlobal}
-              onEdit={handleAbrirEdicion}      
-              onDelete={handleEliminarIngreso}  
-            />
-          </div>
+          <TransactionTable 
+            columns={columns} 
+            data={ingresos} 
+            colorTheme="emerald"
+            usarPendientes={usarPendientes}
+            onEdit={(i) => { setIngresoAEditar(i); setModalAbierto(true); }}
+            onDelete={(id) => setIdAEliminar(id)}
+            onActivar={handleActivarOperacion}
+          />
         </div>
 
-        {/* GRÁFICO */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm p-5 flex flex-col sticky top-24">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Resumen por Categoría</h2>
-          {datosGrafico.length > 0 ? (
-            <>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={datosGrafico} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none" label={({ percent }) => percent !== undefined ? `${(percent * 100).toFixed(0)}%` : ''} labelLine={false} />
-                    <Tooltip formatter={(value: any) => `${Number(value).toFixed(2)} €`} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                  </PieChart>
-                </ResponsiveContainer>
+        <div className="xl:col-span-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm sticky top-6">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-6">Resumen por Categoría</h2>
+          <div className="h-64 w-full">
+            {datosGrafico.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={datosGrafico} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none" label={({ percent }: any) => percent !== undefined ? `${(percent * 100).toFixed(0)}%` : ''} />
+                  <Tooltip formatter={(value: any) => `${formatearMoneda(Number(value))} €`} contentStyle={{ borderRadius: '12px', border: 'none' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-400 text-sm">Sin datos reales para graficar</div>
+            )}
+          </div>
+          <div className="mt-6 space-y-3 max-h-64 overflow-y-auto pr-2">
+            {datosGrafico.map(item => (
+              <div key={item.name} className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300 truncate">{item.name}</span>
+                </div>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">{formatearMoneda(item.value)} €</span>
               </div>
-              <div className="mt-4 space-y-3 flex-grow">
-                {datosGrafico.map((item) => (
-                  <div key={item.name} className="flex justify-between items-center text-sm">
-                    <div className="flex items-center">
-                      <span className="w-3 h-3 rounded-full mr-3 shadow-sm" style={{ backgroundColor: item.fill }}></span>
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">{item.name}</span>
-                    </div>
-                    <span className="text-slate-900 dark:text-white font-bold">{item.value.toFixed(2)} €</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-             <div className="flex items-center justify-center h-64 text-slate-400">No hay ingresos en este mes.</div>
-          )}
+            ))}
+          </div>
         </div>
       </div>
 
-      <ModalAgregarIngreso 
-        isOpen={modalAbierto}
-        onClose={() => setModalAbierto(false)}
-        onSuccess={cargarIngresosDelServidor}
-        categorias={categoriasActivas}
-        cuentas={cuentasActivas}
-        ingresoAEditar={ingresoSeleccionadoEditar}
-      />
-      <ModalConfirmacion 
-        isOpen={!!idAEliminar} 
-        onClose={() => setIdAEliminar(null)} 
-        onConfirm={confirmarEliminacion}
-        mensaje="¿Estás seguro de que deseas eliminar este ingreso permanentemente?"
-      />
-
+      <ModalAgregarIngreso isOpen={modalAbierto} onClose={() => { setModalAbierto(false); setIngresoAEditar(null); }} onSuccess={cargarIngresos} ingresoAEditar={ingresoAEditar} />
+      <ModalConfirmacion isOpen={!!idAEliminar} onClose={() => setIdAEliminar(null)} onConfirm={confirmarEliminacion} mensaje="¿Estás seguro de que deseas eliminar este ingreso permanentemente?" />
     </div>
   );
 }
