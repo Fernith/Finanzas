@@ -11,7 +11,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://127.0.0.0:3000', // Apunta a tu servidor Rust local
+        target: 'http://localhost:3000',
+        //target: 'http://127.0.0.0:3000', // Apunta a tu servidor Rust local
         changeOrigin: true,
       }
     }
