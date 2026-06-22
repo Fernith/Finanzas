@@ -34,7 +34,7 @@ pub async fn iniciar_cron_suscripciones(pool: PgPool) {
                     
                     // 1. Insertamos el gasto real
                     let _ = sqlx::query(
-                        "INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente) VALUES ('GASTO'::tipo_operacion_enum, $1::date, $2::float8::numeric, $3::uuid, $4::uuid, $5, true)"
+                        "INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente) VALUES ('GASTO'::tipo_operacion_enum, $1::date, $2::float8::numeric, $3::uuid, $4::uuid, $5, false)"
                     )
                     .bind(&row.fecha_proxima_renovacion)
                     .bind(row.cantidad)

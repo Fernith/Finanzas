@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&text=0123456789%2C%2E%2D%2B%25%E2%82%AC%20&display=swap');
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -8,23 +6,9 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'FuenteNumeros';
-  /* Apuntamos a la fuente de números que acabamos de importar */
-  src: local('JetBrains Mono'); 
-  /* AQUÍ ESTÁ LA MAGIA: Le decimos qué caracteres debe atrapar */
-  unicode-range: 
-    U+0030-0039, /* Números del 0 al 9 */
-    U+002C,      /* Coma (,) */
-    U+002E,      /* Punto (.) */
-    U+20AC,      /* Símbolo Euro (€) */
-    U+002B,      /* Signo Más (+) */
-    U+002D,      /* Signo Menos (-) */
-    U+0025;      /* Porcentaje (%) */
-}
 /* 2. Forzamos a que toda la aplicación use esta fuente por defecto */
 @layer base {
   html, body {
-    font-family: 'Playfair Display', 'Nunito Sans', sans-serif !important;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }

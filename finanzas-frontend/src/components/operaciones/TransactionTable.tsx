@@ -15,7 +15,7 @@ type Props = {
 
 export default function TransactionTable({ transacciones, onEdit, onDelete, onTogglePendiente, tipo, colorBorderTheme }: Props) {
   const [sortDesc, setSortDesc] = useState(true);
-  const [perPage, setPerPage] = useState(100);
+  const [perPage, setPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   
   const [idConfirmarActivacion, setIdConfirmarActivacion] = useState<string | null>(null);

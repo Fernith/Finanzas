@@ -113,7 +113,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
 
         // 2. Crear Gasto reflejo para restar la liquidez bancaria
         await fetch('/api/gastos', { 
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: activoSeleccionado?.categoria_id || null, cuenta_id: form.cuenta_id, descripcion: `Inversión: ${activoSeleccionado?.nombre || form.activo_ticker}`, pendiente: true }) 
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: activoSeleccionado?.categoria_id || null, cuenta_id: form.cuenta_id, descripcion: `Inversión: ${activoSeleccionado?.nombre || form.activo_ticker}`, pendiente: false }) 
         });
 
       } else {

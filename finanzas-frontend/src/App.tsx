@@ -41,7 +41,7 @@ function App() {
           {/* BOTÓN FLOTANTE GENÉRICO GLOBAL (FAB) */}
           <button
             onClick={() => setModalGlobalAbierto(true)}
-            className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 p-4 rounded-full bg-amber-400 shadow-lg hover:bg-amber-400 hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
+            className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 p-4 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
             title="Añadir Operación"
           >
             <Plus size={28} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
