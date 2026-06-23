@@ -43,14 +43,14 @@ pub async fn obtener_resumen(State(pool): State<PgPool>) -> Result<Json<ResumenA
 
 // --- 2. GESTIÓN DE METAS ---
 pub async fn listar_metas(State(pool): State<PgPool>) -> impl IntoResponse {
+    // Ya no ordenamos por nombre en el SQL, lo haremos en Rust por porcentaje
     let metas_db: Vec<(String, String, f64, String)> = sqlx::query_as(
-        "SELECT id::text, nombre, objetivo::float, color FROM metas_ahorro ORDER BY nombre ASC"
+        "SELECT id::text, nombre, objetivo::float, color FROM metas_ahorro"
     ).fetch_all(&pool).await.unwrap_or_default();
     
     let mut resultado = Vec::new();
 
     for (id, nombre, objetivo, color) in metas_db {
-        // Corregido: Ordenación pura por tu campo de fecha manual
         let movs: Vec<(String, String, f64)> = sqlx::query_as(
             "SELECT id::text, fecha::text, cantidad::float FROM movimientos_metas WHERE meta_id = $1::uuid ORDER BY fecha DESC"
         )
@@ -66,6 +66,18 @@ pub async fn listar_metas(State(pool): State<PgPool>) -> impl IntoResponse {
 
         resultado.push(MetaAhorroDTO { id, nombre, objetivo, color, ahorrado, movimientos: movimientos_dto });
     }
+
+    // --- NUEVO: ORDENACIÓN POR PORCENTAJE ---
+    resultado.sort_by(|a, b| {
+        // Calculamos el porcentaje de 'a' y 'b' (evitando división por cero)
+        let porcentaje_a = if a.objetivo > 0.0 { a.ahorrado / a.objetivo } else { 0.0 };
+        let porcentaje_b = if b.objetivo > 0.0 { b.ahorrado / b.objetivo } else { 0.0 };
+        
+        // Ordenamos de mayor a menor (descendente). 
+        // Si quieres que las metas con menos % salgan arriba, cambia pct_b y pct_a de orden.
+        porcentaje_b.partial_cmp(&porcentaje_a).unwrap_or(std::cmp::Ordering::Equal)
+    });
+
     Json(resultado).into_response()
 }
 
