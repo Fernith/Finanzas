@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Trash2, CheckCircle2, Clock, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Transaction } from '../../types';
 import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
 import ModalConfirmacion from '../general/ModalConfirmacion';
