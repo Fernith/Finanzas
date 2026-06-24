@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft } from 'lucide-react';
+import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, User } from 'lucide-react';
 
 export type TipoTransaccion = 'GASTO' | 'INGRESO' | 'INVERSION';
 
@@ -22,7 +22,8 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
     cuenta_id: '',
     descripcion: '',
     pendiente: false,
-    activo_ticker: ''
+    activo_ticker: '',
+    campo_extra_ingreso: ''
   });
 
   const [categorias, setCategorias] = useState<any[]>([]);
@@ -44,7 +45,8 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         pendiente: transaccionAEditar?.pendiente || false,
         categoria_id: transaccionAEditar?.categoria_id || '',
         cuenta_id: transaccionAEditar?.cuenta_id || '',
-        activo_ticker: ''
+        activo_ticker: '',
+        campo_extra_ingreso: transaccionAEditar?.campo_extra_ingreso || ''
       }));
 
       const fetchData = async () => {
@@ -108,7 +110,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         
         // 1. Guardar la Inversión (Aportación)
         await fetch('/api/inversiones/transacciones', { 
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha_compra: form.fecha, euros_invertidos: cantidadLimpia, activo_ticker: form.activo_ticker }) 
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha_compra: form.fecha, euros_invertidos: cantidadLimpia, activo_ticker: form.activo_ticker, cuenta_id: form.cuenta_id }) 
         });
 
         // 2. Crear Gasto reflejo para restar la liquidez bancaria
@@ -120,7 +122,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         // Gasto / Ingreso Normal
         if (!form.categoria_id || !form.cuenta_id) { alert('Selecciona una categoría y cuenta.'); setEnviando(false); return; }
 
-        const payload = { fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: form.categoria_id, cuenta_id: form.cuenta_id, descripcion: form.descripcion.trim() || null, pendiente: form.pendiente };
+        const payload = { fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: form.categoria_id, cuenta_id: form.cuenta_id, descripcion: form.descripcion.trim() || null, pendiente: form.pendiente, campo_extra_ingreso: form.campo_extra_ingreso };
         const urls: any = { GASTO: '/api/gastos', INGRESO: '/api/ingresos' };
         const url = transaccionAEditar ? `${urls[form.tipo]}/${transaccionAEditar.id}` : urls[form.tipo];
         const method = transaccionAEditar ? 'PUT' : 'POST';
@@ -210,6 +212,15 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
               {cuentas.map(cta => <option key={cta.id} value={cta.id}>{cta.nombre}</option>)}
             </select>
           </div>
+
+          {form.tipo === 'INGRESO' && (
+            <>
+            <div>
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><User size={16} className="text-slate-400"/> Pagador / Entidad</label>
+                <textarea rows={1} placeholder="Detalle de la operación..." value={form.campo_extra_ingreso} onChange={e => setForm({...form, campo_extra_ingreso: e.target.value})} className={`${inputClases} resize-none`} />
+              </div>
+            </>
+          )}
 
           {/* CONDICIONAL: DESCRIPCIÓN Y PENDIENTE (Solo Gastos e Ingresos) */}
           {form.tipo !== 'INVERSION' && (

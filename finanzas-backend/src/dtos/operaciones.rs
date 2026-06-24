@@ -24,7 +24,7 @@ pub struct GastoDTO {
     pub fecha: String, 
     pub cantidad: f64, 
     pub categoria: String, 
-    pub color_grupo: Option<String>, // NUEVO CAMPO
+    pub color_categoria: Option<String>, 
     pub cuenta: String, 
     pub descripcion: Option<String>, 
     pub pendiente: bool 
@@ -47,10 +47,11 @@ pub struct IngresoDTO {
     pub fecha: String, 
     pub cantidad: f64, 
     pub categoria: String, 
-    pub color_grupo: Option<String>, // NUEVO CAMPO
+    pub color_categoria: Option<String>, 
     pub cuenta: String, 
     pub descripcion: Option<String>,
-    pub pendiente: bool 
+    pub pendiente: bool,
+    pub campo_extra_ingreso: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -60,6 +61,6 @@ pub struct NuevoIngresoDTO {
     pub categoria_id: String, 
     pub cuenta_id: String, 
     pub descripcion: Option<String>, 
-    // ELIMINADO: pub campo_extra_ingreso: Option<String>, 
-    pub pendiente: bool 
+    pub pendiente: bool,
+    pub campo_extra_ingreso: Option<String>,
 }

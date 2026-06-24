@@ -8,11 +8,10 @@ import ModalAlerta from '../components/general/ModalAlerta';
 import { useAjustes } from '../hooks/useAjustes';
 import { useSuscripciones } from '../hooks/useSuscripciones';
 
-type TargetT = 'grupos' | 'categorias' | 'cuentas';
+type TargetT = 'categorias' | 'cuentas';
 
 export default function Ajustes() {
   const { 
-    grupos, setGrupos, cargarGrupos,
     categorias, setCategorias, cargarCategorias,
     cuentas, setCuentas, cargarCuentas, ejecutarAccionEstado 
   } = useAjustes();
@@ -33,14 +32,6 @@ export default function Ajustes() {
   const handleAbrirEdicion = (target: TargetT, item: any) => { setTargetModal(target); setItemSeleccionado(item); setModalOpen(true); };
   
   const handleToggleEstado = (target: TargetT, id: string, nombre: string, tipo: 'activar' | 'desactivar') => {
-    // VALIDACIÓN 1: No desactivar un grupo si tiene categorías.
-    if (target === 'grupos' && tipo === 'desactivar') {
-      const enUso = categorias.some(c => c.grupo_id === id && c.activo);
-      if (enUso) {
-        setAlerta({ titulo: "Grupo en uso", mensaje: `No puedes desactivar el grupo "${nombre}" porque tiene categorías activas asignadas. Reasígnalas o desactívalas primero.` });
-        return;
-      }
-    }
 
     // VALIDACIÓN 2: No desactivar una cuenta si tiene suscripciones activas.
     if (target === 'cuentas' && tipo === 'desactivar') {
@@ -63,7 +54,6 @@ export default function Ajustes() {
   };
 
   const onSuccessModal = () => {
-    if (targetModal === 'grupos') cargarGrupos();
     if (targetModal === 'categorias') cargarCategorias();
     if (targetModal === 'cuentas') cargarCuentas();
   }
@@ -84,11 +74,7 @@ export default function Ajustes() {
 
       <TogglePendientes />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-        <CatalogoMaestro 
-          titulo="Catálogo de Grupos" target="grupos" items={grupos} setItems={setGrupos}
-          onReload={cargarGrupos} onAbrirAlta={handleAbrirAlta} onAbrirEdicion={handleAbrirEdicion} onToggleEstado={handleToggleEstado}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <CatalogoMaestro 
           titulo="Catálogo de Categorías" target="categorias" items={categorias} setItems={setCategorias}
           onReload={cargarCategorias} onAbrirAlta={handleAbrirAlta} onAbrirEdicion={handleAbrirEdicion} onToggleEstado={handleToggleEstado}
@@ -103,7 +89,7 @@ export default function Ajustes() {
       <ModalAjusteMaestro 
         isOpen={modalOpen} onClose={() => setModalOpen(false)} 
         onSuccess={onSuccessModal} target={targetModal} 
-        itemAEditar={itemSeleccionado} grupos={grupos} 
+        itemAEditar={itemSeleccionado}
       />
       
       <ModalConfirmacion 

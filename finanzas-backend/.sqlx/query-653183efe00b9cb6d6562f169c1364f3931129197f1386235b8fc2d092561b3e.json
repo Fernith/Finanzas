@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            o.fecha::text as \"fecha!\", \n            o.cantidad::float as \"cantidad!\", \n            o.tipo_operacion_id::text as \"tipo_operacion_id!\", \n            c.nombre as \"categoria!\",\n            g.color as \"color_grupo?\"\n        FROM operaciones o\n        JOIN categorias c ON o.categoria_id = c.id\n        LEFT JOIN grupos g ON c.grupo_id = g.id\n        WHERE EXTRACT(YEAR FROM o.fecha) = $1 AND o.pendiente = false\n        ORDER BY o.fecha ASC\n        ",
+  "query": "\n        SELECT \n            o.fecha::text as \"fecha!\", \n            o.cantidad::float as \"cantidad!\", \n            o.tipo_operacion_id::text as \"tipo_operacion_id!\", \n            c.nombre as \"categoria!\",\n            c.color as \"color_categoria?\"\n        FROM operaciones o\n        JOIN categorias c ON o.categoria_id = c.id\n        WHERE EXTRACT(YEAR FROM o.fecha) = $1 AND o.pendiente = false\n        ORDER BY o.fecha ASC\n        ",
   "describe": {
     "columns": [
       {
@@ -25,7 +25,7 @@
       },
       {
         "ordinal": 4,
-        "name": "color_grupo?",
+        "name": "color_categoria?",
         "type_info": "Text"
       }
     ],
@@ -42,5 +42,5 @@
       true
     ]
   },
-  "hash": "816cfa46e80cdc788eec0eca1b8358cf95c3eb1bc21cc4235abc01178d6f6fff"
+  "hash": "653183efe00b9cb6d6562f169c1364f3931129197f1386235b8fc2d092561b3e"
 }

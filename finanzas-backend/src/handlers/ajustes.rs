@@ -13,14 +13,11 @@ pub async fn listar_categorias(State(pool): State<PgPool>) -> impl IntoResponse 
         r#"SELECT 
             c.id::text as "id!", 
             c.nombre as "nombre!", 
-            c.tipo_operacion_id::text as "tipo_operacion_id!", 
-            c.grupo_id::text as "grupo_id?",
-            g.nombre as "grupo_nombre?", 
-            g.color as "color?", 
+            c.tipo_operacion_id::text as "tipo_operacion_id!",
+            c.color as "color?", 
             COALESCE(c.activo, true) as "activo!", 
             COALESCE(c.orden, 0) as "orden!" 
            FROM categorias c
-           LEFT JOIN grupos g ON c.grupo_id = g.id
            ORDER BY c.orden ASC, c.nombre ASC"#
     ).fetch_all(&pool).await;
 
@@ -41,15 +38,15 @@ pub async fn crear_categoria(State(pool): State<PgPool>, Json(payload): Json<Ups
     let max_orden: i32 = match max_orden_row { Ok(Some(val)) => val, _ => 0 };
     let orden_final = payload.orden.unwrap_or(max_orden + 1);
 
-    let result = sqlx::query("INSERT INTO categorias (nombre, tipo_operacion_id, grupo_id, activo, orden) VALUES ($1, $2::tipo_operacion_enum, $3::uuid, true, $4)")
-        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(&payload.grupo_id).bind(orden_final).execute(&pool).await;
+    let result = sqlx::query("INSERT INTO categorias (nombre, tipo_operacion_id, activo, orden, color) VALUES ($1, $2::tipo_operacion_enum, true, $3, $4)")
+        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(orden_final).bind(&payload.color).execute(&pool).await;
 
     match result { Ok(_) => (StatusCode::CREATED, "OK").into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
 }
 
 pub async fn modificar_categoria(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertCategoriaDTO>) -> impl IntoResponse {
-    let result = sqlx::query("UPDATE categorias SET nombre = $1, tipo_operacion_id = $2::tipo_operacion_enum, grupo_id = $3::uuid WHERE id = $4::uuid")
-        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(&payload.grupo_id).bind(&id).execute(&pool).await;
+    let result = sqlx::query("UPDATE categorias SET nombre = $1, tipo_operacion_id = $2::tipo_operacion_enum, color = $3 WHERE id = $4::uuid")
+        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(&payload.color).bind(&id).execute(&pool).await;
     match result { Ok(_) => (StatusCode::OK, "OK").into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
 }
 

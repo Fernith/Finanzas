@@ -7,7 +7,7 @@ pub struct ActivoDTO {
     pub nombre: String,
     pub categoria_id: Option<String>,
     pub categoria_nombre: Option<String>, // Para mostrar en la tabla
-    pub color: Option<String>,            // Heredado del grupo de la categoría
+    pub color: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -24,6 +24,7 @@ pub struct TransaccionDTO {
     pub fecha_compra: String,
     pub euros_invertidos: f64,
     pub activo_ticker: String,
+    pub cuenta_id: String,
 }
 
 #[derive(Deserialize)]
@@ -31,4 +32,5 @@ pub struct UpsertTransaccionDTO {
     pub fecha_compra: String,
     pub euros_invertidos: f64,
     pub activo_ticker: String,
+    pub cuenta_id: String,
 }

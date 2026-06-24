@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT \n            a.ticker as \"ticker!\", \n            a.nombre as \"nombre!\", \n            a.categoria_id::text as \"categoria_id?\", \n            c.nombre as \"categoria_nombre?\",\n            g.color as \"color?\"\n        FROM activos a\n        LEFT JOIN categorias c ON a.categoria_id = c.id\n        LEFT JOIN grupos g ON c.grupo_id = g.id\n        ORDER BY a.nombre ASC\n        ",
+  "query": "\n        SELECT \n            a.ticker as \"ticker!\", \n            a.nombre as \"nombre!\", \n            a.categoria_id::text as \"categoria_id?\", \n            c.nombre as \"categoria_nombre?\",\n            c.color as \"color?\"\n        FROM activos a\n        LEFT JOIN categorias c ON a.categoria_id = c.id\n        ORDER BY a.nombre ASC\n        ",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       true
     ]
   },
-  "hash": "247cdcfa14836c57661bda4822bfb4ac07fd164a60bfede4062023c16a6b63b8"
+  "hash": "d2edc147a2a0eddf8f2cd28e1b1a82f9a873712c29129e4a3642cb699fe5345e"
 }

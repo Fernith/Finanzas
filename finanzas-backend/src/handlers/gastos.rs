@@ -22,14 +22,13 @@ pub async fn obtener_gastos(
             o.fecha::text as "fecha!", 
             o.cantidad::float as "cantidad!",
             c.nombre as "categoria!",
-            g.color as "color_grupo?",
+            c.color as "color_categoria?",
             cu.nombre as "cuenta!",
             o.descripcion,
             COALESCE(o.pendiente, false)::bool as "pendiente!",
             COUNT(*) OVER() as "total_filas!"
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
-        LEFT JOIN grupos g ON c.grupo_id = g.id
         JOIN cuentas cu ON o.cuenta_id = cu.id
         WHERE o.tipo_operacion_id = 'GASTO'::tipo_operacion_enum
           AND (
@@ -49,7 +48,7 @@ pub async fn obtener_gastos(
 
     let total_count = rows.first().map(|r| r.total_filas).unwrap_or(0);
     let gastos: Vec<GastoDTO> = rows.into_iter().map(|r| GastoDTO {
-        id: r.id, fecha: r.fecha, cantidad: r.cantidad, categoria: r.categoria, color_grupo: r.color_grupo, cuenta: r.cuenta, descripcion: r.descripcion, pendiente: r.pendiente
+        id: r.id, fecha: r.fecha, cantidad: r.cantidad, categoria: r.categoria, color_categoria: r.color_categoria, cuenta: r.cuenta, descripcion: r.descripcion, pendiente: r.pendiente
     }).collect();
 
     let mut headers = HeaderMap::new();
@@ -60,7 +59,7 @@ pub async fn obtener_gastos(
 pub async fn obtener_categorias_gastos(State(pool): State<PgPool>) -> impl IntoResponse {
     let rows = sqlx::query_as!(
         MaestroDTO,
-        r#"SELECT c.id::text as "id!", c.nombre, g.color as "color", c.activo FROM categorias c LEFT JOIN grupos g ON c.grupo_id = g.id WHERE c.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
+        r#"SELECT c.id::text as "id!", c.nombre, c.color as "color", c.activo FROM categorias c  WHERE c.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
     ).fetch_all(&pool).await;
     match rows { Ok(cats) => Json(cats).into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
 }

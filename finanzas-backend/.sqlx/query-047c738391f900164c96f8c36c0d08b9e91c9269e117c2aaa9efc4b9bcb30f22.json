@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id::text as \"id!\", fecha_compra::text as \"fecha_compra!\", euros_invertidos::float as \"euros_invertidos!\", activo_ticker as \"activo_ticker!\" \n           FROM transacciones ORDER BY fecha_compra DESC",
+  "query": "SELECT id::text as \"id!\", fecha_compra::text as \"fecha_compra!\", euros_invertidos::float as \"euros_invertidos!\", activo_ticker as \"activo_ticker!\", cuenta_id::text as \"cuenta_id!\" \n           FROM transacciones ORDER BY fecha_compra DESC",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "activo_ticker!",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "cuenta_id!",
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -31,8 +36,9 @@
       null,
       null,
       null,
-      true
+      true,
+      null
     ]
   },
-  "hash": "e0ea58cfedf0d73f0322c707c1487f443ee811faee9f001aba3a4bf6626d8080"
+  "hash": "047c738391f900164c96f8c36c0d08b9e91c9269e117c2aaa9efc4b9bcb30f22"
 }

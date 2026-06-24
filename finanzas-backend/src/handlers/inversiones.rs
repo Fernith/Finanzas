@@ -19,10 +19,9 @@ pub async fn listar_activos(State(pool): State<PgPool>) -> impl IntoResponse {
             a.nombre as "nombre!", 
             a.categoria_id::text as "categoria_id?", 
             c.nombre as "categoria_nombre?",
-            g.color as "color?"
+            c.color as "color?"
         FROM activos a
         LEFT JOIN categorias c ON a.categoria_id = c.id
-        LEFT JOIN grupos g ON c.grupo_id = g.id
         ORDER BY a.nombre ASC
         "#
     ).fetch_all(&pool).await;
@@ -78,14 +77,14 @@ pub async fn eliminar_activo(State(pool): State<PgPool>, Path(ticker_param): Pat
 
 pub async fn listar_transacciones(State(pool): State<PgPool>) -> impl IntoResponse {
     let rows = sqlx::query!(
-        r#"SELECT id::text as "id!", fecha_compra::text as "fecha_compra!", euros_invertidos::float as "euros_invertidos!", activo_ticker as "activo_ticker!" 
+        r#"SELECT id::text as "id!", fecha_compra::text as "fecha_compra!", euros_invertidos::float as "euros_invertidos!", activo_ticker as "activo_ticker!", cuenta_id::text as "cuenta_id!" 
            FROM transacciones ORDER BY fecha_compra DESC"#
     ).fetch_all(&pool).await;
 
     match rows {
         Ok(filas) => {
             let datos: Vec<TransaccionDTO> = filas.into_iter().map(|r| TransaccionDTO {
-                id: r.id, fecha_compra: r.fecha_compra, euros_invertidos: r.euros_invertidos, activo_ticker: r.activo_ticker
+                id: r.id, fecha_compra: r.fecha_compra, euros_invertidos: r.euros_invertidos, activo_ticker: r.activo_ticker, cuenta_id: r.cuenta_id
             }).collect();
             Json(datos).into_response()
         },
@@ -97,15 +96,16 @@ pub async fn listar_transacciones(State(pool): State<PgPool>) -> impl IntoRespon
 }
 
 pub async fn crear_transaccion(State(pool): State<PgPool>, Json(payload): Json<UpsertTransaccionDTO>) -> impl IntoResponse {
-    let result = sqlx::query("INSERT INTO transacciones (fecha_compra, euros_invertidos, activo_ticker) VALUES ($1::date, $2::float8::numeric, $3)")
-        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).execute(&pool).await;
+    let result = sqlx::query("INSERT INTO transacciones (fecha_compra, euros_invertidos, activo_ticker, cuenta_id) VALUES ($1::date, $2::float8::numeric, $3, $4::uuid)")
+        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).bind(&payload.cuenta_id).execute(&pool).await;
 
     match result { Ok(_) => StatusCode::CREATED.into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
 }
 
 pub async fn modificar_transaccion(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertTransaccionDTO>) -> impl IntoResponse {
-    let result = sqlx::query("UPDATE transacciones SET fecha_compra = $1::date, euros_invertidos = $2::float8::numeric, activo_ticker = $3 WHERE id = $4::uuid")
-        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).bind(&id).execute(&pool).await;
+    let result = sqlx::query("UPDATE transacciones SET fecha_compra = $1::date, euros_invertidos = $2::float8::numeric, activo_ticker = $3, cuenta_id = $4::uuid WHERE id = $5::uuid")
+        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).bind(&payload.cuenta_id).bind(&id)
+        .execute(&pool).await;
 
     match result { Ok(_) => StatusCode::OK.into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
 }

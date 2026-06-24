@@ -12,9 +12,8 @@ pub async fn iniciar_cron_suscripciones(pool: PgPool) {
             // Buscamos si existe la categoría "Suscripciones"
             let cat_id = match sqlx::query_scalar::<_, String>("SELECT id::text FROM categorias WHERE nombre ILIKE 'Suscripciones' LIMIT 1").fetch_optional(&pool).await {
                 Ok(Some(id)) => id,
-                // Si no existe, la creamos (sin color, con grupo_id a NULL)
                 _ => sqlx::query_scalar::<_, String>(
-                    "INSERT INTO categorias (nombre, tipo_operacion_id, grupo_id, activo, orden) VALUES ('Suscripciones', 'GASTO'::tipo_operacion_enum, NULL, true, 999) RETURNING id::text"
+                    "INSERT INTO categorias (nombre, tipo_operacion_id, activo, orden) VALUES ('Suscripciones', 'GASTO'::tipo_operacion_enum, true, 999) RETURNING id::text"
                 ).fetch_one(&pool).await.unwrap_or_default()
             };
 

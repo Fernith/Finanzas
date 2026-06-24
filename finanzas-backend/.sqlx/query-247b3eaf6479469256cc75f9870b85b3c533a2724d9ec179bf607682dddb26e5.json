@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id::text as \"id!\", c.nombre, g.color as \"color\", c.activo FROM categorias c LEFT JOIN grupos g ON c.grupo_id = g.id WHERE c.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC",
+  "query": "SELECT c.id::text as \"id!\", c.nombre, c.color as \"color\", c.activo FROM categorias c  WHERE c.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       true
     ]
   },
-  "hash": "84c860409c512e36572fb556bf581291dea7baa2d96becf4c334b11c2894a1e5"
+  "hash": "247b3eaf6479469256cc75f9870b85b3c533a2724d9ec179bf607682dddb26e5"
 }

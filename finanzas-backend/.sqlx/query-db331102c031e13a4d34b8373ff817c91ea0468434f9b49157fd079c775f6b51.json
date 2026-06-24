@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT \n            c.id::text as \"id!\", \n            c.nombre as \"nombre!\", \n            c.tipo_operacion_id::text as \"tipo_operacion_id!\",\n            c.color as \"color?\", \n            COALESCE(c.activo, true) as \"activo!\", \n            COALESCE(c.orden, 0) as \"orden!\" \n           FROM categorias c\n           ORDER BY c.orden ASC, c.nombre ASC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "nombre!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "tipo_operacion_id!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "color?",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "activo!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "orden!",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      false,
+      null,
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "db331102c031e13a4d34b8373ff817c91ea0468434f9b49157fd079c775f6b51"
+}

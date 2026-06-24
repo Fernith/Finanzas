@@ -18,7 +18,8 @@ export interface Transaction {
   fecha: string;
   cantidad: number;
   categoria: string;
-  color_grupo?: string; // NUEVO
+  color_categoria?: string;
+  campo_extra_ingreso?: string;
   cuenta: string;
   descripcion?: string;
   pendiente: boolean;

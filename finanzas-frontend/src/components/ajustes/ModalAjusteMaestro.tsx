@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Layers, Palette, CheckSquare, Folder } from 'lucide-react';
+import { X, Type, Layers, Palette, CheckSquare } from 'lucide-react';
 
 type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  target: 'grupos' | 'categorias' | 'cuentas';
+  target: 'categorias' | 'cuentas';
   itemAEditar?: any;
-  grupos?: any[]; // Necesitamos los grupos para el desplegable de categorías
 };
 
-export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target, itemAEditar, grupos = [] }: ModalProps) {
+export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target, itemAEditar }: ModalProps) {
   const [nombre, setNombre] = useState('');
   const [color, setColor] = useState('#3b82f6');
   
   const [tipoOperacionId, setTipoOperacionId] = useState('GASTO');
-  const [grupoId, setGrupoId] = useState(''); // Nuevo estado para categorías
+  //const [grupoId, setGrupoId] = useState(''); // Nuevo estado para categorías
   
   // INVERSION quitado por defecto al crear cuentas
-  const [tiposCuenta, setTiposCuenta] = useState<string[]>(['GASTO', 'INGRESO']); 
+  const [tiposCuenta, setTiposCuenta] = useState<string[]>(['GASTO', 'INGRESO', 'INVERSION']); 
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -28,18 +27,18 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
         setColor(itemAEditar.color || '#3b82f6');
         if (target === 'categorias') {
           setTipoOperacionId(itemAEditar.tipo_operacion_id);
-          setGrupoId(itemAEditar.grupo_id || '');
+          //setGrupoId(itemAEditar.grupo_id || '');
         }
         if (target === 'cuentas') setTiposCuenta(itemAEditar.tipos_operacion || []);
       } else {
         setNombre('');
         setColor('#3b82f6');
         setTipoOperacionId('GASTO');
-        setGrupoId(grupos.length > 0 ? grupos[0].id : ''); // Seleccionar el primer grupo por defecto si existe
-        setTiposCuenta(['GASTO', 'INGRESO']);
+        //setGrupoId(grupos.length > 0 ? grupos[0].id : ''); // Seleccionar el primer grupo por defecto si existe
+        setTiposCuenta(['GASTO', 'INGRESO', 'INVERSION']);
       }
     }
-  }, [isOpen, itemAEditar, target, grupos]);
+  }, [isOpen, itemAEditar, target]);
 
   if (!isOpen) return null;
 
@@ -59,12 +58,9 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
     
     let payload: any = { nombre: nombre.trim() };
     
-    if (target === 'grupos') {
-      payload.color = color;
-    } else if (target === 'categorias') {
+    if (target === 'categorias') {
       payload.tipo_operacion_id = tipoOperacionId;
-      payload.grupo_id = grupoId !== '' ? grupoId : null;
-      // Categorías ya NO envían color
+      payload.color = color;
     } else if (target === 'cuentas') {
       payload.tipos_operacion = tiposCuenta;
       payload.color = color;
@@ -83,7 +79,7 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
     } catch { alert('Error de red.'); } finally { setEnviando(false); }
   };
 
-  const singuloLabel = target === 'categorias' ? 'Categoría' : target === 'cuentas' ? 'Cuenta' : 'Grupo';
+  const singuloLabel = target === 'categorias' ? 'Categoría' : 'Cuenta';
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
@@ -114,15 +110,6 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
                 </select>
               </div>
               
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Folder size={16} /> Grupo al que pertenece</label>
-                <select value={grupoId} onChange={(e) => setGrupoId(e.target.value)} required className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-100">
-                  <option value="" disabled>Selecciona un grupo...</option>
-                  {grupos.filter(g => g.activo).map(g => (
-                    <option key={g.id} value={g.id}>{g.nombre}</option>
-                  ))}
-                </select>
-              </div>
             </>
           )}
 
@@ -141,14 +128,11 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
             </div>
           )}
 
-          {/* El color se pide para GRUPOS y CUENTAS, pero NO para categorías */}
-          {(target === 'grupos' || target === 'cuentas') && (
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Palette size={16} /> Color</label>
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-12 h-10 rounded-lg cursor-pointer bg-transparent border-0" />
-            </div>
-          )}
-
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Palette size={16} /> Color</label>
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="w-12 h-10 rounded-lg cursor-pointer bg-transparent border-0" />
+          </div>
+          
           <div className="flex flex-col sm:flex-row gap-3 pt-2">
             <button type="submit" disabled={enviando} className="w-full sm:w-1/2 order-1 sm:order-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl font-semibold shadow-md active:scale-95">{enviando ? 'Guardando...' : 'Guardar'}</button>
             <button type="button" onClick={onClose} className="w-full sm:w-1/2 order-2 sm:order-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-semibold active:scale-95">Cancelar</button>

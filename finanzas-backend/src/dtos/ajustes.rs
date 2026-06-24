@@ -23,8 +23,6 @@ pub struct CategoriaItemDTO {
     pub id: String,
     pub nombre: String,
     pub tipo_operacion_id: String,
-    pub grupo_id: Option<String>, 
-    pub grupo_nombre: Option<String>, // Añadido para el (Nombre del Grupo)
     pub color: Option<String>,    
     pub activo: bool,
     pub orden: i32,
@@ -34,8 +32,8 @@ pub struct CategoriaItemDTO {
 pub struct UpsertCategoriaDTO {
     pub nombre: String,
     pub tipo_operacion_id: String,
-    pub grupo_id: Option<String>, 
     pub orden: Option<i32>,
+    pub color: Option<String>,
 }
 
 // --- CUENTAS ---

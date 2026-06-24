@@ -22,14 +22,14 @@ pub async fn obtener_ingresos(
             o.fecha::text as "fecha!", 
             o.cantidad::float as "cantidad!",
             c.nombre as "categoria!",
-            g.color as "color_grupo?",
+            c.color as "color_categoria?",
             cu.nombre as "cuenta!",
             o.descripcion,
             COALESCE(o.pendiente, false)::bool as "pendiente!",
+            o.campo_extra_ingreso,
             COUNT(*) OVER() as "total_filas!"
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
-        LEFT JOIN grupos g ON c.grupo_id = g.id
         JOIN cuentas cu ON o.cuenta_id = cu.id
         WHERE o.tipo_operacion_id = 'INGRESO'::tipo_operacion_enum
           AND (
@@ -49,7 +49,7 @@ pub async fn obtener_ingresos(
 
     let total_count = rows.first().map(|r| r.total_filas).unwrap_or(0);
     let ingresos: Vec<IngresoDTO> = rows.into_iter().map(|r| IngresoDTO {
-        id: r.id, fecha: r.fecha, cantidad: r.cantidad, categoria: r.categoria, color_grupo: r.color_grupo, cuenta: r.cuenta, descripcion: r.descripcion, pendiente: r.pendiente
+        id: r.id, fecha: r.fecha, cantidad: r.cantidad, categoria: r.categoria, color_categoria: r.color_categoria, cuenta: r.cuenta, descripcion: r.descripcion, pendiente: r.pendiente, campo_extra_ingreso: r.campo_extra_ingreso
     }).collect();
 
     let mut headers = HeaderMap::new();
@@ -60,7 +60,7 @@ pub async fn obtener_ingresos(
 pub async fn obtener_categorias_ingresos(State(pool): State<PgPool>) -> impl IntoResponse {
     let rows = sqlx::query_as!(
         MaestroDTO,
-        r#"SELECT c.id::text as "id!", c.nombre, g.color as "color", c.activo FROM categorias c LEFT JOIN grupos g ON c.grupo_id = g.id WHERE c.tipo_operacion_id = 'INGRESO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
+        r#"SELECT c.id::text as "id!", c.nombre, c.color as "color", c.activo FROM categorias c WHERE c.tipo_operacion_id = 'INGRESO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
     ).fetch_all(&pool).await;
     match rows { Ok(cats) => Json(cats).into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
 }
@@ -74,12 +74,18 @@ pub async fn obtener_cuentas_ingresos(State(pool): State<PgPool>) -> impl IntoRe
 }
 
 pub async fn crear_ingreso(State(pool): State<PgPool>, Json(payload): Json<NuevoIngresoDTO>) -> impl IntoResponse {
-    let result = sqlx::query(r#"INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente) VALUES ('INGRESO'::tipo_operacion_enum, $1::text::date, $2::float8::numeric, $3::text::uuid, $4::text::uuid, $5, $6::boolean)"#).bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).execute(&pool).await;
+    let result = sqlx::query(r#"INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente, campo_extra_ingreso) 
+        VALUES ('INGRESO'::tipo_operacion_enum, $1::text::date, $2::float8::numeric, $3::text::uuid, $4::text::uuid, $5, $6::boolean, $7)"#)
+        .bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).bind(payload.campo_extra_ingreso)
+        .execute(&pool).await;
     match result { Ok(_) => (StatusCode::CREATED, "OK").into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
 }
 
 pub async fn actualizar_ingreso(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<NuevoIngresoDTO>) -> impl IntoResponse {
-    let result = sqlx::query(r#"UPDATE operaciones SET fecha = $1::text::date, cantidad = $2::float8::numeric, categoria_id = $3::text::uuid, cuenta_id = $4::text::uuid, descripcion = $5, pendiente = $6::boolean WHERE id = $7::text::uuid AND tipo_operacion_id = 'INGRESO'::tipo_operacion_enum"#).bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).bind(&id).execute(&pool).await;
+    let result = sqlx::query(r#"UPDATE operaciones SET fecha = $1::text::date, cantidad = $2::float8::numeric, categoria_id = $3::text::uuid, cuenta_id = $4::text::uuid, descripcion = $5, pendiente = $6::boolean, campo_extra_ingreso = $7
+        WHERE id = $8::text::uuid AND tipo_operacion_id = 'INGRESO'::tipo_operacion_enum"#)
+        .bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).bind(payload.campo_extra_ingreso).bind(&id)
+        .execute(&pool).await;
     match result { Ok(_) => (StatusCode::OK, "OK").into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
 }
 

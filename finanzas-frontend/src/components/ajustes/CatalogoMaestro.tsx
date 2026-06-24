@@ -5,11 +5,11 @@ type CatalogoProps = {
   titulo: string;
   items: any[];
   setItems: (items: any[]) => void;
-  target: 'grupos' | 'categorias' | 'cuentas';
+  target: 'categorias' | 'cuentas';
   onReload: () => void;
-  onAbrirAlta: (target: 'grupos' | 'categorias' | 'cuentas') => void;
-  onAbrirEdicion: (target: 'grupos' | 'categorias' | 'cuentas', item: any) => void;
-  onToggleEstado: (target: 'grupos' | 'categorias' | 'cuentas', id: string, nombre: string, tipo: 'activar' | 'desactivar') => void;
+  onAbrirAlta: (target: 'categorias' | 'cuentas') => void;
+  onAbrirEdicion: (target: 'categorias' | 'cuentas', item: any) => void;
+  onToggleEstado: (target: 'categorias' | 'cuentas', id: string, nombre: string, tipo: 'activar' | 'desactivar') => void;
 };
 
 export default function CatalogoMaestro({ titulo, items, setItems, target, onReload, onAbrirAlta, onAbrirEdicion, onToggleEstado }: CatalogoProps) {
@@ -93,8 +93,6 @@ export default function CatalogoMaestro({ titulo, items, setItems, target, onRel
                 <div>
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {item.nombre}
-                    {/* AQUÍ ESTÁ EL CAMBIO PARA MOSTRAR EL GRUPO EN CATEGORÍAS */}
-                    {item.grupo_nombre && <span className="ml-1 text-xs font-normal text-slate-400">({item.grupo_nombre})</span>}
                   </p>
                   <div className="flex gap-1 mt-1 flex-wrap">
                     {typeof item.tipo_operacion_id === 'string' && (

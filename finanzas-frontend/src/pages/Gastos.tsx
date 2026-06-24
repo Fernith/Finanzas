@@ -77,7 +77,7 @@ export default function Gastos() {
   const categoriasStats = useMemo(() => {
     const agrupado: Record<string, { nombre: string, color: string, totalAnual: number, totalMes: number }> = {};
     tAnualesFiltradas.filter(t => !t.pendiente).forEach(t => {
-      if (!agrupado[t.categoria]) { agrupado[t.categoria] = { nombre: t.categoria, color: t.color_grupo || '#ef4444', totalAnual: 0, totalMes: 0 }; }
+      if (!agrupado[t.categoria]) { agrupado[t.categoria] = { nombre: t.categoria, color: t.color_categoria || '#ef4444', totalAnual: 0, totalMes: 0 }; }
       agrupado[t.categoria].totalAnual += t.cantidad;
     });
     tMensualesFiltradas.filter(t => !t.pendiente).forEach(t => {

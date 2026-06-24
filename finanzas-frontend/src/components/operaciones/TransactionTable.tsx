@@ -15,7 +15,7 @@ type Props = {
 
 export default function TransactionTable({ transacciones, onEdit, onDelete, onTogglePendiente, tipo, colorBorderTheme }: Props) {
   const [sortDesc, setSortDesc] = useState(true);
-  const [perPage, setPerPage] = useState(25);
+  const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   
   const [idConfirmarActivacion, setIdConfirmarActivacion] = useState<string | null>(null);
@@ -49,13 +49,14 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
             
             <thead>
               <tr className={`${headerBg} border-b border-neutral-200 dark:border-neutral-800/80`}>
-                <th className="p-4 w-10 text-center"></th>
+                {/* <th className="p-4 w-10 text-center"></th> */}
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 cursor-pointer select-none" onClick={() => setSortDesc(!sortDesc)}>
                   <div className="flex items-center gap-1">FECHA <ChevronDown size={14} className={`transition-transform ${!sortDesc && 'rotate-180'}`}/></div>
                 </th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CANTIDAD</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CATEGORÍA</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CUENTA</th>
+                {isIngreso && <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">PAGADOR/ENTIDAD</th>}
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">DESCRIPCIÓN</th>
                 <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 text-center">ACCIONES</th>
               </tr>
@@ -63,15 +64,17 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
             
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
               {currentItems.map((t) => {
-                const bgCat = t.color_grupo || '#94a3b8';
+                const bgCat = t.color_categoria || '#94a3b8';
                 return (
                   <tr key={t.id} className="odd:bg-transparent even:bg-neutral-50 dark:even:bg-[#161616] hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] transition-colors">
+                    {/* 
                     <td className="p-4 text-center">
                       {t.pendiente 
                         ? <button onClick={() => setIdConfirmarActivacion(t.id)} title="Marcar completado" className="text-amber-500 hover:scale-110 transition-transform"><Clock size={16} strokeWidth={3} /></button>
                         : <span title="Completado"><CheckCircle2 size={16} strokeWidth={3} className="text-emerald-500 mx-auto" /></span>
                       }
                     </td>
+                    */}
                     <td className="p-4 text-sm font-medium text-neutral-700 dark:text-neutral-300">{formatDate(t.fecha)}</td>
                     <td className="p-4 text-base font-bold text-neutral-900 dark:text-white">{formatearMoneda(t.cantidad)} €</td>
                     
@@ -87,6 +90,7 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                     </td>
                     
                     <td className="p-4 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]">{t.cuenta}</td>
+                    {isIngreso && <td className="p-4 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]">{t.campo_extra_ingreso || ''}</td>}
                     <td className="p-4 text-sm text-neutral-500 dark:text-neutral-400 min-w-[200px] max-w-[300px] whitespace-pre-wrap break-words">{t.descripcion || ''}</td>
                     <td className="p-4 text-center">
                       <div className="flex items-center justify-center gap-3">
@@ -107,7 +111,7 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                 <td colSpan={2} className={`p-4 text-xs font-bold uppercase tracking-wider ${colorTextHighlight}`}>
                   TOTAL FILTRADO:
                 </td>
-                <td colSpan={5} className={`p-4 text-base font-black ${colorTextHighlight}`}>
+                <td colSpan={isIngreso ? 6 : 5} className={`p-4 text-base font-black ${colorTextHighlight}`}>
                   {formatearMoneda(totalFiltrado)} €
                 </td>
               </tr>

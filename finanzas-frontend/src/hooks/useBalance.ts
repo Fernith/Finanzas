@@ -58,7 +58,7 @@ export function useBalance() {
     operaciones.forEach(op => {
       const mesIdx = parseInt(op.fecha.split('-')[1]) - 1;
       const cantidadStr = Number(op.cantidad);
-      colores[op.categoria] = op.color_grupo || '#94a3b8';
+      colores[op.categoria] = op.color_categoria || '#94a3b8';
 
       if (op.tipo_operacion_id === 'INGRESO') {
         resumen[mesIdx].ingresos += cantidadStr;

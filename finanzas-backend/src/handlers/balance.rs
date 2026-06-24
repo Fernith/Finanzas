@@ -18,10 +18,9 @@ pub async fn obtener_balance_anual(
             o.cantidad::float as "cantidad!", 
             o.tipo_operacion_id::text as "tipo_operacion_id!", 
             c.nombre as "categoria!",
-            g.color as "color_grupo?"
+            c.color as "color_categoria?"
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
-        LEFT JOIN grupos g ON c.grupo_id = g.id
         WHERE EXTRACT(YEAR FROM o.fecha) = $1 AND o.pendiente = false
         ORDER BY o.fecha ASC
         "#,
