@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 // --- GRUPOS ---
 #[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "snake_case")]
 pub struct GrupoDTO {
     pub id: String,
     pub nombre: String,
@@ -11,6 +12,7 @@ pub struct GrupoDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertGrupoDTO {
     pub nombre: String,
     pub color: Option<String>,
@@ -19,6 +21,7 @@ pub struct UpsertGrupoDTO {
 
 // --- CATEGORÍAS ---
 #[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "snake_case")]
 pub struct CategoriaItemDTO {
     pub id: String,
     pub nombre: String,
@@ -29,6 +32,7 @@ pub struct CategoriaItemDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertCategoriaDTO {
     pub nombre: String,
     pub tipo_operacion_id: String,
@@ -38,6 +42,7 @@ pub struct UpsertCategoriaDTO {
 
 // --- CUENTAS ---
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct CuentaItemDTO {
     pub id: String,
     pub nombre: String,
@@ -48,6 +53,7 @@ pub struct CuentaItemDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertCuentaDTO {
     pub nombre: String,
     pub color: Option<String>,
@@ -57,11 +63,13 @@ pub struct UpsertCuentaDTO {
 
 // --- CONFIGURACIÓN Y OTROS ---
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ConfiguracionDTO {
     pub usar_pendientes: bool,
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ReordenarDTO {
     pub id: String,
     pub orden: i32,

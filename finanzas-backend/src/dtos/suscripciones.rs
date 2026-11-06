@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct SuscripcionDTO {
     pub id: String,
     pub nombre: String,
@@ -14,6 +15,7 @@ pub struct SuscripcionDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertSuscripcionDTO {
     pub nombre: String,
     pub cantidad: f64,

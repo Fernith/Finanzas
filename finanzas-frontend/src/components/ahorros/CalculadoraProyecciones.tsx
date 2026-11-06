@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Calculator, Calendar, CheckSquare, Square } from 'lucide-react';
+import type { MetaAhorro } from '../../types';
 
-export default function CalculadoraProyecciones({ metas }: { metas: any[] }) {
+export default function CalculadoraProyecciones({ metas }: { metas: MetaAhorro[] }) {
   // FILTRO: Nos quedamos únicamente con las metas que no están completadas ni canceladas
   const metasActivas = useMemo(() => metas.filter(m => m.ahorrado < m.objetivo), [metas]);
 

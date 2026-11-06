@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct FiltroFecha { 
     pub mes: i32, 
     pub anio: i32, 
@@ -10,6 +11,7 @@ pub struct FiltroFecha {
 }
 
 #[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "snake_case")]
 pub struct MaestroDTO { 
     pub id: String, 
     pub nombre: String, 
@@ -19,6 +21,7 @@ pub struct MaestroDTO {
 
 // --- GASTOS ---
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct GastoDTO { 
     pub id: String, 
     pub fecha: String, 
@@ -31,6 +34,7 @@ pub struct GastoDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct NuevoGastoDTO { 
     pub fecha: String, 
     pub cantidad: f64, 
@@ -42,6 +46,7 @@ pub struct NuevoGastoDTO {
 
 // --- INGRESOS ---
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct IngresoDTO { 
     pub id: String, 
     pub fecha: String, 
@@ -55,6 +60,7 @@ pub struct IngresoDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct NuevoIngresoDTO { 
     pub fecha: String, 
     pub cantidad: f64, 

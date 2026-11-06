@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router';
 import { Menu, X, Sun, Moon, Settings, Wallet, TrendingDown, TrendingUp, LineChart, Target, Repeat } from 'lucide-react';
 
 export default function Navbar() {

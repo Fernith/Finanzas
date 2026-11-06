@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { ajustesApi } from '../api/client';
 
 type ConfigContextType = {
   usarPendientes: boolean;
@@ -12,8 +13,7 @@ export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    fetch('/api/configuracion')
-      .then(res => res.json())
+    ajustesApi.obtenerConfiguracion()
       .then(data => {
         setUsarPendientes(data.usar_pendientes);
         setCargando(false);

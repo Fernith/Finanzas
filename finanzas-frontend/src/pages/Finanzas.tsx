@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { AreaChart, Calendar, TrendingUp } from 'lucide-react';
 import Acordeon from '../components/general/Acordeon';
 import BalanceMetricas from '../components/balance/BalanceMetricas';
@@ -10,11 +9,11 @@ import AhorrosResumenCabecera from '../components/ahorros/AhorrosResumenCabecera
 
 import { useBalance } from '../hooks/useBalance';
 import { useAhorros } from '../hooks/useAhorros';
-import { formatearMoneda } from '../utils/formatters';
+import { formatearMoneda, redondearMoneda } from '../utils/formatters';
 
 export default function Finanzas() {
   const {
-    anioSeleccionado, setAnioSeleccionado, años, mesesNombres,
+    anioSeleccionado, setAnioSeleccionado, anios, mesesNombres,
     resumenMensual, tablaCategoriasGastos, tablaCategoriasIngresos, 
     totalGastosAnual, totalIngresosAnual, coloresCategorias,
     flujoNetoActual, flujoNetoAnterior, mesActualStats
@@ -22,26 +21,13 @@ export default function Finanzas() {
 
   const { resumen, totalReservadoMetas, dineroDisponibleGastar } = useAhorros();
 
-  // ESTADO NUEVO: Llamada nativa para corregir el "Capital Invertido" que llegaba a 0
-  const [dineroInvertidoReal, setDineroInvertidoReal] = useState(0);
-
-  useEffect(() => {
-    fetch('/api/inversiones/transacciones')
-      .then(res => res.ok ? res.json() : [])
-      .then((data: any[]) => {
-        const total = data.reduce((acc, item) => acc + Number(item.euros_invertidos || 0), 0);
-        setDineroInvertidoReal(total);
-      })
-      .catch(console.error);
-  }, []);
-
   const crecimientoFlujo = flujoNetoAnterior !== 0 ? ((flujoNetoActual - flujoNetoAnterior) / Math.abs(flujoNetoAnterior)) * 100 : 0;
   
-  const totalMesEnCurso = mesActualStats.ingresos + mesActualStats.gastos;
+  const totalMesEnCurso = redondearMoneda(mesActualStats.ingresos + mesActualStats.gastos);
   const pctIngresos = totalMesEnCurso > 0 ? (mesActualStats.ingresos / totalMesEnCurso) * 100 : 50;
   const pctGastos = totalMesEnCurso > 0 ? (mesActualStats.gastos / totalMesEnCurso) * 100 : 50;
 
-  const totalReal = resumen.dinero_liquido + dineroInvertidoReal;
+  const totalReal = redondearMoneda(resumen.dinero_liquido + resumen.dinero_invertido);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12 w-[95vw] max-w-[1600px] 2xl:max-w-[1800px] relative left-1/2 -translate-x-1/2">
@@ -60,7 +46,7 @@ export default function Finanzas() {
         <div className="relative flex items-center bg-white dark:bg-neutral-900 border border-slate-200 dark:border-indigo-500/30 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/30 transition-all cursor-pointer">
           <Calendar className="text-slate-400 absolute left-4 pointer-events-none" size={20} />
           <select value={anioSeleccionado} onChange={(e) => setAnioSeleccionado(Number(e.target.value))} className="w-full pl-12 pr-4 py-2 bg-transparent text-lg font-bold text-slate-800 dark:text-white outline-none cursor-pointer dark:bg-neutral-900 dark:focus:bg-neutral-900">
-            {años.map(a => <option key={a} value={a}>{a}</option>)}
+            {anios.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
       </div>
@@ -120,7 +106,7 @@ export default function Finanzas() {
           <div className="w-full">
             <AhorrosResumenCabecera 
               dinero_liquido={resumen.dinero_liquido}
-              dinero_invertido={dineroInvertidoReal} // Inyectamos el valor real obtenido
+              dinero_invertido={resumen.dinero_invertido}
               totalReservadoMetas={totalReservadoMetas}
               dineroDisponibleGastar={dineroDisponibleGastar}
             />

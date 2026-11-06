@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Euro } from 'lucide-react';
+import { ahorrosApi } from '../../api/client';
+import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
+import type { MetaAhorro } from '../../types';
 
-export default function ModalMovimientoMeta({ isOpen, onClose, onSuccess, meta, tipo }: any) {
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  meta?: MetaAhorro | null;
+  tipo?: 'add' | 'withdraw';
+};
+
+export default function ModalMovimientoMeta({ isOpen, onClose, onSuccess, meta, tipo }: Props) {
+  const [fecha, setFecha] = useState(obtenerFechaHoyEsp());
   const [cantidad, setCantidad] = useState('');
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => { if (isOpen) { setFecha(new Date().toISOString().split('T')[0]); setCantidad(''); } }, [isOpen]);
+  useEffect(() => { if (isOpen) { setFecha(obtenerFechaHoyEsp()); setCantidad(''); } }, [isOpen]);
   if (!isOpen || !meta) return null;
 
   const isAdd = tipo === 'add';
@@ -14,15 +25,13 @@ export default function ModalMovimientoMeta({ isOpen, onClose, onSuccess, meta, 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEnviando(true);
-    const montoFinal = isAdd ? Number(cantidad) : -Math.abs(Number(cantidad));
+    const montoFinal = redondearMoneda(isAdd ? Number(cantidad) : -Math.abs(Number(cantidad)));
     
     try {
-      const response = await fetch(`/api/ahorros/metas/${meta.id}/movimientos`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha, cantidad: montoFinal })
-      });
-      if (response.ok) { onSuccess(); onClose(); } else { alert('Error al procesar el movimiento'); }
-    } catch { alert('Error de red'); } finally { setEnviando(false); }
+      await ahorrosApi.agregarMovimiento(meta.id, { fecha, cantidad: montoFinal });
+      onSuccess();
+      onClose();
+    } catch { alert('Error al procesar el movimiento'); } finally { setEnviando(false); }
   };
 
   return (

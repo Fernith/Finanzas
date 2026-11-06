@@ -1,8 +1,9 @@
-import { formatearMoneda } from '../../utils/formatters';
+import { formatearMoneda, obtenerFechaHoyEsp } from '../../utils/formatters';
+import type { ResumenMesBalance } from '../../types';
 
 type Props = { 
   mesesNombres: string[]; 
-  resumenMensual: any[]; 
+  resumenMensual: ResumenMesBalance[]; 
   totalIngresos: number; 
   totalGastos: number; 
   totalBalance: number;
@@ -12,8 +13,9 @@ type Props = {
 export default function TablaBalanceMensual({ mesesNombres, resumenMensual, totalIngresos, totalGastos, totalBalance, anioSeleccionado }: Props) {
   
   // Cálculo inteligente de los meses válidos para la media
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1; // 1 a 12
+  const [anioHoyStr, mesHoyStr] = obtenerFechaHoyEsp().split('-');
+  const currentYear = Number(anioHoyStr);
+  const currentMonth = Number(mesHoyStr); // 1 a 12
   
   // Si es un año pasado dividimos entre 12. Si es el actual, entre los meses que llevamos.
   const divisorMedia = anioSeleccionado < currentYear ? 12 : anioSeleccionado > currentYear ? 1 : currentMonth;

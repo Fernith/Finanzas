@@ -1,8 +1,9 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { formatearMoneda } from '../../utils/formatters';
+import type { BarraMediaCategoria } from '../../types';
 
 type Props = {
-  data: any[];
+  data: BarraMediaCategoria[];
   colorBorderTheme: string;
 };
 
@@ -19,7 +20,7 @@ export default function GraficoMediaCategorias({ data, colorBorderTheme }: Props
             <XAxis dataKey="categoria" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#888' }} interval={0} angle={-45} textAnchor="end" height={60} />
             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(v) => `${v}€`} />
             <RechartsTooltip 
-              formatter={(((v: number) => [`${formatearMoneda(v)} €/mes`, 'Media']) as any)} 
+              formatter={(v) => [`${formatearMoneda(Number(v ?? 0))} €/mes`, 'Media']} 
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
             />
             {/* El color se inyecta automáticamente gracias a la prop 'fill' de la data */}

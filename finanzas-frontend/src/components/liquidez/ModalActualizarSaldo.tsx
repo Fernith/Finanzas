@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Coins } from 'lucide-react';
+import { liquidezApi } from '../../api/client';
+import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
+import type { CuentaLiquidez } from '../../types';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  cuenta: any;
+  cuenta: CuentaLiquidez | null;
 };
 
 export default function ModalActualizarSaldo({ isOpen, onClose, onSuccess, cuenta }: Props) {
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [fecha, setFecha] = useState(obtenerFechaHoyEsp());
   const [cantidad, setCantidad] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setFecha(new Date().toISOString().split('T')[0]);
+      setFecha(obtenerFechaHoyEsp());
       setCantidad('');
     }
   }, [isOpen]);
@@ -27,14 +30,14 @@ export default function ModalActualizarSaldo({ isOpen, onClose, onSuccess, cuent
     setEnviando(true);
     
     try {
-      const response = await fetch('/api/liquidez/saldos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cuenta_id: cuenta.cuenta_id, fecha, cantidad: Number(cantidad) })
+      await liquidezApi.registrarSaldo({
+        cuenta_id: cuenta.cuenta_id,
+        fecha,
+        cantidad: redondearMoneda(Number(cantidad)),
       });
-      if (response.ok) { onSuccess(); onClose(); } 
-      else { alert('Error al registrar el saldo'); }
-    } catch { alert('Error de red'); } finally { setEnviando(false); }
+      onSuccess();
+      onClose();
+    } catch { alert('Error al registrar el saldo'); } finally { setEnviando(false); }
   };
 
   return (

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Clock } from 'lucide-react';
+import { ajustesApi } from '../../api/client';
 import { useConfig } from '../../context/ConfigContext';
 import ModalConfirmacion from '../general/ModalConfirmacion';
 
@@ -11,12 +12,8 @@ export default function TogglePendientes() {
     const nuevoEstado = !usarPendientes;
     setUsarPendientes(nuevoEstado); 
     try {
-      await fetch('/api/configuracion', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usar_pendientes: nuevoEstado })
-      });
-    } catch (e) {
+      await ajustesApi.actualizarConfiguracion({ usar_pendientes: nuevoEstado });
+    } catch {
       alert('Error de conexión al guardar la configuración');
       setUsarPendientes(!nuevoEstado); 
     } finally { 

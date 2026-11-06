@@ -1,10 +1,13 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatearMoneda } from '../../utils/formatters';
+import type { ResumenMesBalance } from '../../types';
 
-type Props = { resumenMensual: any[]; };
+type Props = { resumenMensual: ResumenMesBalance[]; };
 
 export default function GraficoBalanceEvolutivo({ resumenMensual }: Props) {
-  const customTooltipFormatter = (value: any) => [`${formatearMoneda(Number(value))} €`];
+  const customTooltipFormatter = (value: number | string | readonly (number | string)[] | undefined) => [
+    `${formatearMoneda(Number(value ?? 0))} €`,
+  ];
 
   return (
     <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-blue-500/30 rounded-2xl p-6 shadow-sm">

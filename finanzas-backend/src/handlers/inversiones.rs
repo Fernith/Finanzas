@@ -4,13 +4,14 @@ use axum::{
     http::StatusCode,
 };
 use sqlx::PgPool;
+use crate::error::AppError;
 use crate::dtos::transacciones::*;
 
 // ==========================================
 // MÓDULO DE ACTIVOS
 // ==========================================
 
-pub async fn listar_activos(State(pool): State<PgPool>) -> impl IntoResponse {
+pub async fn listar_activos(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         ActivoDTO,
         r#"
@@ -24,93 +25,76 @@ pub async fn listar_activos(State(pool): State<PgPool>) -> impl IntoResponse {
         LEFT JOIN categorias c ON a.categoria_id = c.id
         ORDER BY a.nombre ASC
         "#
-    ).fetch_all(&pool).await;
+    ).fetch_all(&pool).await?;
 
-    match rows {
-        Ok(items) => Json(items).into_response(),
-        Err(e) => {
-            println!("❌ Error SQL en listar_activos: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-        }
-    }
+    Ok(Json(rows))
 }
 
-pub async fn crear_activo(State(pool): State<PgPool>, Json(payload): Json<UpsertActivoDTO>) -> impl IntoResponse {
-    let result = sqlx::query("INSERT INTO activos (ticker, nombre, categoria_id) VALUES ($1, $2, $3::uuid)")
+pub async fn crear_activo(State(pool): State<PgPool>, Json(payload): Json<UpsertActivoDTO>) -> Result<impl IntoResponse, AppError> {
+    sqlx::query("INSERT INTO activos (ticker, nombre, categoria_id) VALUES ($1, $2, $3::uuid)")
         .bind(&payload.ticker)
         .bind(&payload.nombre)
         .bind(&payload.categoria_id)
-        .execute(&pool).await;
+        .execute(&pool).await?;
 
-    match result { 
-        Ok(_) => StatusCode::CREATED.into_response(), 
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() 
-    }
+    Ok(StatusCode::CREATED)
 }
 
-pub async fn modificar_activo(State(pool): State<PgPool>, Path(ticker_param): Path<String>, Json(payload): Json<UpsertActivoDTO>) -> impl IntoResponse {
+pub async fn modificar_activo(State(pool): State<PgPool>, Path(ticker_param): Path<String>, Json(payload): Json<UpsertActivoDTO>) -> Result<impl IntoResponse, AppError> {
     // Nota: Modificamos nombre y categoría, pero NO el ticker porque es la Clave Primaria.
-    let result = sqlx::query("UPDATE activos SET nombre = $1, categoria_id = $2::uuid WHERE ticker = $3")
+    sqlx::query("UPDATE activos SET nombre = $1, categoria_id = $2::uuid WHERE ticker = $3")
         .bind(&payload.nombre)
         .bind(&payload.categoria_id)
         .bind(&ticker_param)
-        .execute(&pool).await;
+        .execute(&pool).await?;
 
-    match result { 
-        Ok(_) => StatusCode::OK.into_response(), 
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() 
-    }
+    Ok(StatusCode::OK)
 }
 
-pub async fn eliminar_activo(State(pool): State<PgPool>, Path(ticker_param): Path<String>) -> impl IntoResponse {
+pub async fn eliminar_activo(State(pool): State<PgPool>, Path(ticker_param): Path<String>) -> Result<impl IntoResponse, AppError> {
     // Al eliminar el activo, las transacciones se borrarán en cascada gracias a ON DELETE CASCADE
-    let result = sqlx::query("DELETE FROM activos WHERE ticker = $1").bind(&ticker_param).execute(&pool).await;
-    match result { 
-        Ok(_) => StatusCode::OK.into_response(), 
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() 
-    }
+    sqlx::query("DELETE FROM activos WHERE ticker = $1").bind(&ticker_param).execute(&pool).await?;
+    Ok(StatusCode::OK)
 }
 
 // ==========================================
 // MÓDULO DE TRANSACCIONES (COMPRAS)
 // ==========================================
 
-pub async fn listar_transacciones(State(pool): State<PgPool>) -> impl IntoResponse {
+pub async fn listar_transacciones(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query!(
         r#"SELECT id::text as "id!", fecha_compra::text as "fecha_compra!", euros_invertidos::float as "euros_invertidos!", activo_ticker as "activo_ticker!", cuenta_id::text as "cuenta_id!" 
            FROM transacciones ORDER BY fecha_compra DESC"#
-    ).fetch_all(&pool).await;
+    ).fetch_all(&pool).await?;
 
-    match rows {
-        Ok(filas) => {
-            let datos: Vec<TransaccionDTO> = filas.into_iter().map(|r| TransaccionDTO {
-                id: r.id, fecha_compra: r.fecha_compra, euros_invertidos: r.euros_invertidos, activo_ticker: r.activo_ticker, cuenta_id: r.cuenta_id
-            }).collect();
-            Json(datos).into_response()
-        },
-        Err(e) => {
-            println!("❌ Error SQL en listar_transacciones: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response()
-        }
-    }
+    let datos: Vec<TransaccionDTO> = rows.into_iter().map(|r| TransaccionDTO {
+        id: r.id,
+        fecha_compra: r.fecha_compra,
+        euros_invertidos: (r.euros_invertidos * 100.0).round() / 100.0,
+        activo_ticker: r.activo_ticker,
+        cuenta_id: r.cuenta_id,
+    }).collect();
+    Ok(Json(datos))
 }
 
-pub async fn crear_transaccion(State(pool): State<PgPool>, Json(payload): Json<UpsertTransaccionDTO>) -> impl IntoResponse {
-    let result = sqlx::query("INSERT INTO transacciones (fecha_compra, euros_invertidos, activo_ticker, cuenta_id) VALUES ($1::date, $2::float8::numeric, $3, $4::uuid)")
-        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).bind(&payload.cuenta_id).execute(&pool).await;
+pub async fn crear_transaccion(State(pool): State<PgPool>, Json(payload): Json<UpsertTransaccionDTO>) -> Result<impl IntoResponse, AppError> {
+    let euros_redondeados = (payload.euros_invertidos * 100.0).round() / 100.0;
+    sqlx::query("INSERT INTO transacciones (fecha_compra, euros_invertidos, activo_ticker, cuenta_id) VALUES ($1::date, ROUND($2::float8::numeric, 2), $3, $4::uuid)")
+        .bind(&payload.fecha_compra).bind(euros_redondeados).bind(&payload.activo_ticker).bind(&payload.cuenta_id).execute(&pool).await?;
 
-    match result { Ok(_) => StatusCode::CREATED.into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
+    Ok(StatusCode::CREATED)
 }
 
-pub async fn modificar_transaccion(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertTransaccionDTO>) -> impl IntoResponse {
-    let result = sqlx::query("UPDATE transacciones SET fecha_compra = $1::date, euros_invertidos = $2::float8::numeric, activo_ticker = $3, cuenta_id = $4::uuid WHERE id = $5::uuid")
-        .bind(&payload.fecha_compra).bind(payload.euros_invertidos).bind(&payload.activo_ticker).bind(&payload.cuenta_id).bind(&id)
-        .execute(&pool).await;
+pub async fn modificar_transaccion(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertTransaccionDTO>) -> Result<impl IntoResponse, AppError> {
+    let euros_redondeados = (payload.euros_invertidos * 100.0).round() / 100.0;
+    sqlx::query("UPDATE transacciones SET fecha_compra = $1::date, euros_invertidos = ROUND($2::float8::numeric, 2), activo_ticker = $3, cuenta_id = $4::uuid WHERE id = $5::uuid")
+        .bind(&payload.fecha_compra).bind(euros_redondeados).bind(&payload.activo_ticker).bind(&payload.cuenta_id).bind(&id)
+        .execute(&pool).await?;
 
-    match result { Ok(_) => StatusCode::OK.into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
+    Ok(StatusCode::OK)
 }
 
-pub async fn eliminar_transaccion(State(pool): State<PgPool>, Path(id): Path<String>) -> impl IntoResponse {
-    let result = sqlx::query("DELETE FROM transacciones WHERE id = $1::uuid").bind(&id).execute(&pool).await;
-    match result { Ok(_) => StatusCode::OK.into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
+pub async fn eliminar_transaccion(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
+    sqlx::query("DELETE FROM transacciones WHERE id = $1::uuid").bind(&id).execute(&pool).await?;
+    Ok(StatusCode::OK)
 }

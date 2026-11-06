@@ -1,25 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ajustesApi } from '../api/client';
+import type { CategoriaItem, CuentaItem } from '../types';
 
 export function useAjustes() {
-  const [categorias, setCategorias] = useState<any[]>([]);
-  const [cuentas, setCuentas] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
+  const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
 
-  const cargarCategorias = useCallback(() => { fetch('/api/ajustes/categorias').then(res => res.json()).then(data => setCategorias(data)); }, []);
-  const cargarCuentas = useCallback(() => { fetch('/api/ajustes/cuentas').then(res => res.json()).then(data => setCuentas(data)); }, []);
+  const cargarCategorias = useCallback(() => {
+    ajustesApi.listarCategorias().then(setCategorias).catch(console.error);
+  }, []);
 
-  useEffect(() => { cargarCategorias(); cargarCuentas(); }, [cargarCategorias, cargarCuentas]);
+  const cargarCuentas = useCallback(() => {
+    ajustesApi.listarCuentas().then(setCuentas).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    cargarCategorias();
+    cargarCuentas();
+  }, [cargarCategorias, cargarCuentas]);
 
   const ejecutarAccionEstado = async (target: 'categorias' | 'cuentas', id: string, tipo: 'activar' | 'desactivar') => {
-    const url = tipo === 'desactivar' ? `/api/ajustes/${target}/${id}` : `/api/ajustes/${target}/${id}/activar`;
     try {
-      const res = await fetch(url, { method: tipo === 'desactivar' ? 'DELETE' : 'PUT' });
-      if (res.ok) {
-        if (target === 'categorias') cargarCategorias();
-        if (target === 'cuentas') cargarCuentas();
-        return true;
+      if (target === 'categorias') {
+        if (tipo === 'desactivar') await ajustesApi.desactivarCategoria(id);
+        else await ajustesApi.activarCategoria(id);
+        cargarCategorias();
+      } else {
+        if (tipo === 'desactivar') await ajustesApi.desactivarCuenta(id);
+        else await ajustesApi.activarCuenta(id);
+        cargarCuentas();
       }
+      return true;
+    } catch {
       return false;
-    } catch { return false; }
+    }
   };
 
   return { categorias, setCategorias, cuentas, setCuentas, cargarCategorias, cargarCuentas, ejecutarAccionEstado };

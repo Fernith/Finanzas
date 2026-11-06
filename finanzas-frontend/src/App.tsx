@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import { Plus } from 'lucide-react';
 import Navbar from './components/general/Navbar';
 import ModalTransaccion from './components/operaciones/ModalTransaccion';

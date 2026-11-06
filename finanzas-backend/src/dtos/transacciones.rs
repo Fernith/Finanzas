@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 // --- ACTIVOS (NUEVO MODELO DE INVERSIONES) ---
 #[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "snake_case")]
 pub struct ActivoDTO {
     pub ticker: String,
     pub nombre: String,
@@ -11,6 +12,7 @@ pub struct ActivoDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertActivoDTO {
     pub ticker: String,
     pub nombre: String,
@@ -19,6 +21,7 @@ pub struct UpsertActivoDTO {
 
 // --- TRANSACCIONES (COMPRAS DE ACTIVOS) ---
 #[derive(Serialize, sqlx::FromRow)]
+#[serde(rename_all = "snake_case")]
 pub struct TransaccionDTO {
     pub id: String,
     pub fecha_compra: String,
@@ -28,6 +31,7 @@ pub struct TransaccionDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct UpsertTransaccionDTO {
     pub fecha_compra: String,
     pub euros_invertidos: f64,

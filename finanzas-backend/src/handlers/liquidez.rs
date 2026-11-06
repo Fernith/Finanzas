@@ -40,9 +40,12 @@ pub async fn obtener_saldos_actuales(State(pool): State<PgPool>) -> Result<Json<
     ).fetch_all(&pool).await?;
 
     let dto = resultados.into_iter().map(|r| CuentaLiquidezDTO {
-        cuenta_id: r.cuenta_id, nombre: r.nombre, color: r.color,
-        ultimo_saldo_manual: r.ultimo_saldo_manual, fecha_actualizacion: r.fecha_actualizacion,
-        saldo_calculado: r.saldo_calculado,
+        cuenta_id: r.cuenta_id,
+        nombre: r.nombre,
+        color: r.color,
+        ultimo_saldo_manual: (r.ultimo_saldo_manual * 100.0).round() / 100.0,
+        fecha_actualizacion: r.fecha_actualizacion,
+        saldo_calculado: (r.saldo_calculado * 100.0).round() / 100.0,
     }).collect();
 
     Ok(Json(dto)) // El error se maneja solo gracias a AppError
@@ -55,12 +58,17 @@ pub async fn obtener_historial_cuenta(State(pool): State<PgPool>, Path(cuenta_id
            FROM saldos_cuentas WHERE cuenta_id = $1::text::uuid ORDER BY fecha DESC, created_at DESC"#,
         cuenta_id
     ).fetch_all(&pool).await?;
-    Ok(Json(rows))
+    let rows_redondeadas = rows.into_iter().map(|mut h| {
+        h.cantidad = (h.cantidad * 100.0).round() / 100.0;
+        h
+    }).collect();
+    Ok(Json(rows_redondeadas))
 }
 
 pub async fn registrar_saldo(State(pool): State<PgPool>, Json(payload): Json<NuevoSaldoDTO>) -> Result<impl IntoResponse, AppError> {
+    let cantidad_redondeada = (payload.cantidad * 100.0).round() / 100.0;
     sqlx::query!("INSERT INTO saldos_cuentas (cuenta_id, fecha, cantidad) VALUES ($1::text::uuid, $2::text::date, $3::float)",
-        payload.cuenta_id, payload.fecha, payload.cantidad
+        payload.cuenta_id, payload.fecha, cantidad_redondeada
     ).execute(&pool).await?;
     Ok((StatusCode::CREATED, "OK"))
 }

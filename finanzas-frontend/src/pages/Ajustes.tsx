@@ -7,6 +7,7 @@ import CatalogoMaestro from '../components/ajustes/CatalogoMaestro';
 import ModalAlerta from '../components/general/ModalAlerta';
 import { useAjustes } from '../hooks/useAjustes';
 import { useSuscripciones } from '../hooks/useSuscripciones';
+import type { CatalogoItem, Suscripcion } from '../types';
 
 type TargetT = 'categorias' | 'cuentas';
 
@@ -18,7 +19,7 @@ export default function Ajustes() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [targetModal, setTargetModal] = useState<TargetT>('categorias');
-  const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
+  const [itemSeleccionado, setItemSeleccionado] = useState<CatalogoItem | null>(null);
 
   const [accionConfirmacion, setAccionConfirmacion] = useState<{ 
     target: TargetT, id: string, nombre: string, tipo: 'activar' | 'desactivar' 
@@ -29,13 +30,13 @@ export default function Ajustes() {
   const { suscripciones } = useSuscripciones();
 
   const handleAbrirAlta = (target: TargetT) => { setTargetModal(target); setItemSeleccionado(null); setModalOpen(true); };
-  const handleAbrirEdicion = (target: TargetT, item: any) => { setTargetModal(target); setItemSeleccionado(item); setModalOpen(true); };
+  const handleAbrirEdicion = (target: TargetT, item: CatalogoItem) => { setTargetModal(target); setItemSeleccionado(item); setModalOpen(true); };
   
   const handleToggleEstado = (target: TargetT, id: string, nombre: string, tipo: 'activar' | 'desactivar') => {
 
     // VALIDACIÓN 2: No desactivar una cuenta si tiene suscripciones activas.
     if (target === 'cuentas' && tipo === 'desactivar') {
-      const enUso = suscripciones.some((s: any) => s.cuenta_id === id && s.activo);
+      const enUso = suscripciones.some((s: Suscripcion) => s.cuenta_id === id && Boolean(s.activo));
       if (enUso) {
         setAlerta({ titulo: "Cuenta en uso", mensaje: `No puedes desactivar la cuenta "${nombre}" porque tiene suscripciones activas de cobro automático. Cámbialas de cuenta o cancélalas primero.` });
         return;

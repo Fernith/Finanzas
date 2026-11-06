@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Wallet } from 'lucide-react';
+import { ajustesApi, inversionesApi } from '../../api/client';
+import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
+import type { CuentaItem, TransaccionInversion } from '../../types';
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  transaccionAEditar: TransaccionInversion | null;
+  activoTicker?: string;
+};
 
 // Ahora aceptamos "activoTicker" por si estamos creando una nueva transacción desde cero
-export default function ModalTransaccionInversion({ isOpen, onClose, onSuccess, transaccionAEditar, activoTicker }: any) {
+export default function ModalTransaccionInversion({ isOpen, onClose, onSuccess, transaccionAEditar, activoTicker }: Props) {
   const [fecha, setFecha] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [cuentaId, setCuentaId] = useState('');
-  const [cuentas, setCuentas] = useState<any[]>([]);
+  const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
   const [enviando, setEnviando] = useState(false);
 
   // Cargamos el listado de cuentas bancarias
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/ajustes/cuentas')
-        .then(r => r.json())
+      ajustesApi.listarCuentas()
         .then(setCuentas)
         .catch(console.error);
     }
@@ -25,45 +35,34 @@ export default function ModalTransaccionInversion({ isOpen, onClose, onSuccess, 
       setCantidad(transaccionAEditar.euros_invertidos.toString());
       setCuentaId(transaccionAEditar.cuenta_id || '');
     } else if (isOpen) {
-      setFecha(new Date().toISOString().split('T')[0]);
+      setFecha(obtenerFechaHoyEsp());
       setCantidad('');
       setCuentaId('');
     }
   }, [transaccionAEditar, isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEnviando(true);
     
     const payload = {
       fecha_compra: fecha,
-      euros_invertidos: Number(cantidad),
+      euros_invertidos: redondearMoneda(Number(cantidad)),
       // Si estamos editando mantenemos su ticker, si es nueva cogemos el ticker del botón
-      activo_ticker: transaccionAEditar?.activo_ticker || activoTicker,
+      activo_ticker: transaccionAEditar?.activo_ticker || activoTicker || '',
       cuenta_id: cuentaId
     };
 
-    const url = transaccionAEditar 
-      ? `/api/inversiones/transacciones/${transaccionAEditar.id}` 
-      : `/api/inversiones/transacciones`;
-      
-    const method = transaccionAEditar ? 'PUT' : 'POST';
-
     try {
-      const res = await fetch(url, {
-        method, 
-        headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) { 
-        onSuccess(); 
-        onClose(); 
-      } else { 
-        const errorMsg = await res.text();
-        alert(`Error al guardar: ${errorMsg}`); 
+      if (transaccionAEditar) {
+        await inversionesApi.modificarTransaccion(transaccionAEditar.id, payload);
+      } else {
+        await inversionesApi.crearTransaccion(payload);
       }
+      onSuccess();
+      onClose();
     } catch { 
-      alert('Error de red al conectar con el servidor'); 
+      alert('Error al guardar la inversión.'); 
     } finally { 
       setEnviando(false); 
     }
@@ -95,7 +94,7 @@ export default function ModalTransaccionInversion({ isOpen, onClose, onSuccess, 
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400"><Wallet size={16} /></div>
               <select required value={cuentaId} onChange={e => setCuentaId(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none">
                 <option value="" disabled>Selecciona una cuenta</option>
-                {cuentas.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                {cuentas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
           </div>

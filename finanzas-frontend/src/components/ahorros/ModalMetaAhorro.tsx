@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
+import { ahorrosApi } from '../../api/client';
+import { redondearMoneda } from '../../utils/formatters';
+import type { MetaAhorro } from '../../types';
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  metaAEditar?: any;
+  metaAEditar?: MetaAhorro | null;
 };
 
 export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEditar }: Props) {
@@ -34,15 +37,17 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
     e.preventDefault();
     setEnviando(true);
 
-    const payload = { nombre, objetivo: Number(objetivo), color };
-    const url = metaAEditar ? `/api/ahorros/metas/${metaAEditar.id}` : '/api/ahorros/metas';
-    const method = metaAEditar ? 'PUT' : 'POST';
+    const payload = { nombre, objetivo: redondearMoneda(Number(objetivo)), color };
 
     try {
-      const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      if (response.ok) { onSuccess(); onClose(); } 
-      else alert('Error al guardar la meta de ahorro.');
-    } catch { alert('Error de conexión.'); } finally { setEnviando(false); }
+      if (metaAEditar) {
+        await ahorrosApi.modificarMeta(metaAEditar.id, payload);
+      } else {
+        await ahorrosApi.crearMeta(payload);
+      }
+      onSuccess();
+      onClose();
+    } catch { alert('Error al guardar la meta de ahorro.'); } finally { setEnviando(false); }
   };
 
   return (

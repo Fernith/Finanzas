@@ -1,34 +1,57 @@
 import { useState, useRef } from 'react';
 import { Calculator, ChevronDown, ChevronUp } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { formatearMoneda } from '../../utils/formatters';
+import { formatearMoneda, redondearMoneda } from '../../utils/formatters';
+
+type TipoDuracion = 'ANIOS' | 'MESES';
+type TipoAportacion = 'MENSUAL' | 'ANUAL';
+type TipoTasa = 'ANUAL' | 'MENSUAL';
+
+interface PuntoGraficaProyeccion {
+  periodo: number;
+  aportado: number;
+  intereses: number;
+  total: number;
+}
+
+interface ResultadoProyeccion {
+  datosGrafica: PuntoGraficaProyeccion[];
+  totalAportado: number;
+  interesesGenerados: number;
+  capitalFinal: number;
+}
 
 export default function CalculadoraInteresCompuesto() {
   const [isExpanded, setIsExpanded] = useState(false);
   
   const [capitalInicial, setCapitalInicial] = useState<number>(1000);
   const [duracion, setDuracion] = useState<number>(10);
-  const [tipoDuracion, setTipoDuracion] = useState<'AÑOS' | 'MESES'>('AÑOS');
+  const [tipoDuracion, setTipoDuracion] = useState<TipoDuracion>('ANIOS');
   const [aportacion, setAportacion] = useState<number>(200);
-  const [tipoAportacion, setTipoAportacion] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
+  const [tipoAportacion, setTipoAportacion] = useState<TipoAportacion>('MENSUAL');
   const [tasaInteres, setTasaInteres] = useState<number>(7);
-  const [tipoTasa, setTipoTasa] = useState<'ANUAL' | 'MENSUAL'>('ANUAL');
+  const [tipoTasa, setTipoTasa] = useState<TipoTasa>('ANUAL');
 
-  const [proyeccion, setProyeccion] = useState<any>(null);
+  const [proyeccion, setProyeccion] = useState<ResultadoProyeccion | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const calcularProyeccion = () => {
 
     const r = tasaInteres / 100;
-    // Tasa por periodo mensual
-    const i = tipoTasa === 'ANUAL' ? (tasaInteres / 100) / 12 : (tasaInteres / 100);
-    const mesesTotales = tipoDuracion === 'AÑOS' ? duracion * 12 : duracion;
+    // Tasa equivalente compuesta mensual: (1 + r)^(1/12) - 1
+    const i = tipoTasa === 'ANUAL' ? Math.pow(1 + r, 1 / 12) - 1 : r;
+    const mesesTotales = tipoDuracion === 'ANIOS' ? duracion * 12 : duracion;
 
     let saldo = capitalInicial;
     let totalAportado = capitalInicial;
-    const datosGrafica = [];
+    const datosGrafica: PuntoGraficaProyeccion[] = [];
 
-    datosGrafica.push({ periodo: 0, aportado: totalAportado, intereses: 0, total: saldo });
+    datosGrafica.push({
+      periodo: 0,
+      aportado: redondearMoneda(totalAportado),
+      intereses: 0,
+      total: redondearMoneda(saldo),
+    });
 
     for (let m = 1; m <= mesesTotales; m++) {
       // 1. Sumar aportación según toque
@@ -42,28 +65,34 @@ export default function CalculadoraInteresCompuesto() {
       saldo += aportacionEsteMes;
       totalAportado += aportacionEsteMes;
 
-      // 2. Aplicar interés mensual
-      if (tipoTasa === 'MENSUAL') {
-        saldo = saldo * (1 + i);
-    } else if (tipoTasa === 'ANUAL' && m % 12 === 0) {
-        saldo = saldo * (1 + r);
-    }
+      // 2. Aplicar interés compuesto mensual
+      saldo = saldo * (1 + i);
 
-      // 3. Guardar puntos para gráfica (sin redondear hasta el último momento)
+      // 3. Guardar puntos para gráfica redondeados al final del periodo
       const intereses = saldo - totalAportado;
       
-      if (tipoDuracion === 'AÑOS' && m % 12 === 0) {
-        datosGrafica.push({ periodo: m / 12, aportado: totalAportado, intereses, total: saldo });
+      if (tipoDuracion === 'ANIOS' && m % 12 === 0) {
+        datosGrafica.push({
+          periodo: m / 12,
+          aportado: redondearMoneda(totalAportado),
+          intereses: redondearMoneda(intereses),
+          total: redondearMoneda(saldo),
+        });
       } else if (tipoDuracion === 'MESES') {
-        datosGrafica.push({ periodo: m, aportado: totalAportado, intereses, total: saldo });
+        datosGrafica.push({
+          periodo: m,
+          aportado: redondearMoneda(totalAportado),
+          intereses: redondearMoneda(intereses),
+          total: redondearMoneda(saldo),
+        });
       }
     }
 
     setProyeccion({
       datosGrafica,
-      totalAportado,
-      interesesGenerados: saldo - totalAportado,
-      capitalFinal: saldo
+      totalAportado: redondearMoneda(totalAportado),
+      interesesGenerados: redondearMoneda(saldo - totalAportado),
+      capitalFinal: redondearMoneda(saldo),
     });
 
     setTimeout(() => { containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 100);
@@ -91,19 +120,19 @@ export default function CalculadoraInteresCompuesto() {
             <div><label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Duración</label>
             <div className="flex gap-2">
                 <input type="number" value={duracion} onChange={(e) => setDuracion(Number(e.target.value))} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50" />
-                <select value={tipoDuracion} onChange={(e) => setTipoDuracion(e.target.value as any)} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="AÑOS">Años</option><option value="MESES">Meses</option></select>
+                <select value={tipoDuracion} onChange={(e) => setTipoDuracion(e.target.value === 'MESES' ? 'MESES' : 'ANIOS')} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="ANIOS">Años</option><option value="MESES">Meses</option></select>
             </div></div>
 
             <div><label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Aportación Periódica (€)</label>
             <div className="flex gap-2">
                 <input type="number" value={aportacion} onChange={(e) => setAportacion(Number(e.target.value))} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50" />
-                <select value={tipoAportacion} onChange={(e) => setTipoAportacion(e.target.value as any)} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="MENSUAL">Mensual</option><option value="ANUAL">Anual</option></select>
+                <select value={tipoAportacion} onChange={(e) => setTipoAportacion(e.target.value === 'ANUAL' ? 'ANUAL' : 'MENSUAL')} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="MENSUAL">Mensual</option><option value="ANUAL">Anual</option></select>
             </div></div>
 
             <div><label className="block text-xs font-bold text-neutral-500 uppercase mb-1">Tasa de Interés (%)</label>
             <div className="flex gap-2">
                 <input type="number" step="0.01" value={tasaInteres} onChange={(e) => setTasaInteres(Number(e.target.value))} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50" />
-                <select value={tipoTasa} onChange={(e) => setTipoTasa(e.target.value as any)} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="ANUAL">Anual</option><option value="MENSUAL">Mensual</option></select>
+                <select value={tipoTasa} onChange={(e) => setTipoTasa(e.target.value === 'MENSUAL' ? 'MENSUAL' : 'ANUAL')} className="w-1/2 px-3 py-2.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-emerald-500/50"><option value="ANUAL">Anual</option><option value="MENSUAL">Mensual</option></select>
             </div></div>
           </div>
 
@@ -121,9 +150,9 @@ export default function CalculadoraInteresCompuesto() {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={proyeccion.datosGrafica} margin={{ top: 20, right: 0, left: -10, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" className="dark:stroke-neutral-800" />
-                    <XAxis dataKey="periodo" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(v) => `${tipoDuracion === 'AÑOS' ? 'Año' : 'Mes'} ${v}`} />
+                    <XAxis dataKey="periodo" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(v) => `${tipoDuracion === 'ANIOS' ? 'Año' : 'Mes'} ${v}`} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(val) => `${val}€`} />
-                    <Tooltip formatter={(((value: number, name: string) => [`${formatearMoneda(value)} €`, name === 'aportado' ? 'Capital Aportado' : 'Intereses Ganados']) as any)} labelFormatter={(label) => `${tipoDuracion === 'AÑOS' ? 'Año' : 'Mes'} ${label}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Tooltip formatter={(value, name) => [`${formatearMoneda(Number(value ?? 0))} €`, name === 'aportado' || name === 'Capital Aportado' ? 'Capital Aportado' : 'Intereses Ganados']} labelFormatter={(label) => `${tipoDuracion === 'ANIOS' ? 'Año' : 'Mes'} ${label}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                     <Legend iconType="circle" />
                     <Bar dataKey="aportado" stackId="a" fill="#4f46e5" radius={[0, 0, 4, 4]} name="Capital Aportado" />
                     <Bar dataKey="intereses" stackId="a" fill="#10b981" radius={[4, 4, 0, 0]} name="Intereses Ganados" />

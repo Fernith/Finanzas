@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Coins, RefreshCw, History, ArrowRight, ChevronLeft } from 'lucide-react';
 import { formatearMoneda } from '../utils/formatters';
+import type { CuentaLiquidez } from '../types';
 import ModalActualizarSaldo from '../components/liquidez/ModalActualizarSaldo';
 import ModalHistorialSaldo from '../components/liquidez/ModalHistorialSaldo';
 import { useLiquidez } from '../hooks/useLiquidez';
@@ -9,8 +10,8 @@ import { useLiquidez } from '../hooks/useLiquidez';
 export default function Liquidez() {
   const { cuentas, totalCalculado, cargarCuentas } = useLiquidez();
   
-  const [modalActualizar, setModalActualizar] = useState<any>(null);
-  const [modalHistorial, setModalHistorial] = useState<any>(null);
+  const [modalActualizar, setModalActualizar] = useState<CuentaLiquidez | null>(null);
+  const [modalHistorial, setModalHistorial] = useState<CuentaLiquidez | null>(null);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12 w-full max-w-[1400px] mx-auto">

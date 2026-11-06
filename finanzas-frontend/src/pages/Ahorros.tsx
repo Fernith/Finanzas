@@ -7,6 +7,7 @@ import ModalMovimientoMeta from '../components/ahorros/ModalMovimientoMeta';
 import ModalFinalizarMeta from '../components/ahorros/ModalFinalizarMeta';
 import MetaCard from '../components/ahorros/MetaCard';
 import { useAhorros } from '../hooks/useAhorros';
+import type { MetaAhorro } from '../types';
 
 // Importamos los nuevos componentes
 import AhorrosHeader from '../components/ahorros/AhorrosHeader';
@@ -23,12 +24,12 @@ export default function Ahorros() {
   } = useAhorros();
   
   const [modalOpen, setModalOpen] = useState(false);
-  const [metaAEditar, setMetaAEditar] = useState<any>(null);
-  const [itemAEliminar, setItemAEliminar] = useState<any>(null);
+  const [metaAEditar, setMetaAEditar] = useState<MetaAhorro | null>(null);
+  const [itemAEliminar, setItemAEliminar] = useState<MetaAhorro | null>(null);
 
-  const [modalHistorial, setModalHistorial] = useState<any>(null);
-  const [modalMovimiento, setModalMovimiento] = useState<{ meta: any, tipo: 'add' | 'withdraw' } | null>(null);
-  const [modalFinalizar, setModalFinalizar] = useState<any>(null);
+  const [modalHistorial, setModalHistorial] = useState<MetaAhorro | null>(null);
+  const [modalMovimiento, setModalMovimiento] = useState<{ meta: MetaAhorro, tipo: 'add' | 'withdraw' } | null>(null);
+  const [modalFinalizar, setModalFinalizar] = useState<MetaAhorro | null>(null);
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-12 w-full">
@@ -85,7 +86,7 @@ export default function Ahorros() {
 
       {/* Modales */}
       <ModalMetaAhorro isOpen={modalOpen} onClose={() => setModalOpen(false)} onSuccess={cargarDatos} metaAEditar={metaAEditar} />
-      <ModalConfirmacion isOpen={!!itemAEliminar} onClose={() => setItemAEliminar(null)} onConfirm={() => { eliminarMeta(itemAEliminar.id); setItemAEliminar(null); }} titulo="Eliminar meta de ahorro" mensaje={`¿Estás seguro de eliminar el sobre "${itemAEliminar?.nombre}"? El dinero volverá a estar libre.`} />
+      <ModalConfirmacion isOpen={!!itemAEliminar} onClose={() => setItemAEliminar(null)} onConfirm={() => { if (itemAEliminar) eliminarMeta(itemAEliminar.id); setItemAEliminar(null); }} titulo="Eliminar meta de ahorro" mensaje={`¿Estás seguro de eliminar el sobre "${itemAEliminar?.nombre}"? El dinero volverá a estar libre.`} />
       <ModalHistorialMeta isOpen={!!modalHistorial} onClose={() => setModalHistorial(null)} meta={modalHistorial} />
       <ModalMovimientoMeta isOpen={!!modalMovimiento} onClose={() => setModalMovimiento(null)} onSuccess={cargarDatos} meta={modalMovimiento?.meta} tipo={modalMovimiento?.tipo} />
       <ModalFinalizarMeta isOpen={!!modalFinalizar} onClose={() => setModalFinalizar(null)} onSuccess={cargarDatos} meta={modalFinalizar} />

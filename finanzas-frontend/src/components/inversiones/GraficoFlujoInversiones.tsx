@@ -57,7 +57,7 @@ export default function GraficoFlujoInversiones({ flujoMensual }: Props) {
               tickFormatter={(val) => `${val}€`}
             />
             <Tooltip 
-              formatter={(((value: number) => [`${formatearMoneda(value)} €`, 'Invertido']) as any)}
+              formatter={(value) => [`${formatearMoneda(Number(value ?? 0))} €`, 'Invertido']}
               labelFormatter={(label) => `Mes: ${label}`}
               contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             />

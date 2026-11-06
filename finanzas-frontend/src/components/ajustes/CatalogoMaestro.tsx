@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { GripVertical, Plus, CheckCircle, XCircle, Pencil, Trash2, RotateCcw } from 'lucide-react';
+import { ajustesApi } from '../../api/client';
+import type { CatalogoItem } from '../../types';
 
-type CatalogoProps = {
+type CatalogoProps<T extends CatalogoItem> = {
   titulo: string;
-  items: any[];
-  setItems: (items: any[]) => void;
+  items: T[];
+  setItems: (items: T[]) => void;
   target: 'categorias' | 'cuentas';
   onReload: () => void;
   onAbrirAlta: (target: 'categorias' | 'cuentas') => void;
-  onAbrirEdicion: (target: 'categorias' | 'cuentas', item: any) => void;
+  onAbrirEdicion: (target: 'categorias' | 'cuentas', item: T) => void;
   onToggleEstado: (target: 'categorias' | 'cuentas', id: string, nombre: string, tipo: 'activar' | 'desactivar') => void;
 };
 
-export default function CatalogoMaestro({ titulo, items, setItems, target, onReload, onAbrirAlta, onAbrirEdicion, onToggleEstado }: CatalogoProps) {
+export default function CatalogoMaestro<T extends CatalogoItem>({ titulo, items, setItems, target, onReload, onAbrirAlta, onAbrirEdicion, onToggleEstado }: CatalogoProps<T>) {
   const [draggedItem, setDraggedItem] = useState<{ index: number, target: string } | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
@@ -27,11 +29,11 @@ export default function CatalogoMaestro({ titulo, items, setItems, target, onRel
     if (draggedItem?.target === target) setDragOverIndex(index);
   };
 
-  const handleDrop = async (e: React.DragEvent, dropIndex: number, target: string) => {
+  const handleDrop = async (e: React.DragEvent, dropIndex: number, targetParam: 'categorias' | 'cuentas') => {
     e.preventDefault();
     setDragOverIndex(null);
     
-    if (!draggedItem || draggedItem.target !== target || draggedItem.index === dropIndex) return;
+    if (!draggedItem || draggedItem.target !== targetParam || draggedItem.index === dropIndex) return;
 
     setIsSavingOrder(true);
     
@@ -45,12 +47,11 @@ export default function CatalogoMaestro({ titulo, items, setItems, target, onRel
 
     const payload = nuevosItems.map((item, idx) => ({ id: item.id, orden: idx }));
     try {
-      const res = await fetch(`/api/ajustes/${target}/reordenar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error('Error al guardar');
+      if (targetParam === 'categorias') {
+        await ajustesApi.reordenarCategorias(payload);
+      } else {
+        await ajustesApi.reordenarCuentas(payload);
+      }
     } catch {
       alert("Error al guardar el nuevo orden en el servidor.");
       onReload(); // Deshacer en caso de error
@@ -89,18 +90,18 @@ export default function CatalogoMaestro({ titulo, items, setItems, target, onRel
             >
               <div className="flex items-center gap-3">
                 <GripVertical size={16} className="text-slate-400 shrink-0 hover:text-slate-600 dark:hover:text-slate-200" />
-                <span className="w-4 h-4 rounded-full shadow-inner border border-black/10 shrink-0" style={{ backgroundColor: item.color }}></span>
+                <span className="w-4 h-4 rounded-full shadow-inner border border-black/10 shrink-0" style={{ backgroundColor: item.color || undefined }}></span>
                 <div>
                   <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {item.nombre}
                   </p>
                   <div className="flex gap-1 mt-1 flex-wrap">
-                    {typeof item.tipo_operacion_id === 'string' && (
+                    {'tipo_operacion_id' in item && typeof item.tipo_operacion_id === 'string' && (
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${item.tipo_operacion_id === 'GASTO' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : item.tipo_operacion_id === 'INGRESO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>
                         {item.tipo_operacion_id}
                       </span>
                     )}
-                    {Array.isArray(item.tipos_operacion) && item.tipos_operacion.map((tipo: string) => (
+                    {'tipos_operacion' in item && Array.isArray(item.tipos_operacion) && item.tipos_operacion.map((tipo: string) => (
                       <span key={tipo} className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${tipo === 'GASTO' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : tipo === 'INGRESO' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>
                         {tipo}
                       </span>

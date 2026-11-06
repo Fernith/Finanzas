@@ -1,33 +1,45 @@
 import { useState, useEffect } from 'react';
 import { Repeat, Plus, Pencil, Trash2, PowerOff, Power } from 'lucide-react';
 import { useSuscripciones } from '../hooks/useSuscripciones';
-import { formatearMoneda } from '../utils/formatters';
+import { ajustesApi, suscripcionesApi } from '../api/client';
+import { formatearMoneda, redondearMoneda } from '../utils/formatters';
+import type { CuentaItem, Suscripcion } from '../types';
 import ModalSuscripcion from '../components/suscripciones/ModalSuscripcion';
 import ModalConfirmacion from '../components/general/ModalConfirmacion';
 
 export default function Suscripciones() {
   const { suscripciones, cargarSuscripciones, eliminarSuscripcion, procesarTotales } = useSuscripciones();
-  const [cuentas, setCuentas] = useState<any[]>([]);
+  const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
   const { gastoMensual, gastoAnual, gastoMesCurso } = procesarTotales();
 
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [suscripcionAEditar, setSuscripcionAEditar] = useState<any>(null);
+  const [suscripcionAEditar, setSuscripcionAEditar] = useState<Suscripcion | null>(null);
   const [idAEliminar, setIdAEliminar] = useState<string | null>(null);
   
   // NUEVO ESTADO PARA PAUSAR/REACTIVAR
-  const [subParaToggle, setSubParaToggle] = useState<any>(null);
+  const [subParaToggle, setSubParaToggle] = useState<Suscripcion | null>(null);
 
-  useEffect(() => { fetch('/api/ajustes/cuentas').then(res => res.json()).then(setCuentas); }, []);
+  useEffect(() => { ajustesApi.listarCuentas().then(setCuentas).catch(console.error); }, []);
 
-  const toggleActivo = async (sub: any) => {
-    const payload = { ...sub, activo: !sub.activo };
-    if (await fetch(`/api/suscripciones/${sub.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(res => res.ok)) {
+  const toggleActivo = async (sub: Suscripcion) => {
+    try {
+      await suscripcionesApi.modificar(sub.id, {
+        nombre: sub.nombre,
+        cantidad: redondearMoneda(sub.cantidad),
+        cuenta_id: sub.cuenta_id,
+        fecha_inicio: sub.fecha_inicio,
+        fecha_proxima_renovacion: sub.fecha_proxima_renovacion,
+        periodicidad: sub.periodicidad,
+        activo: !sub.activo,
+      });
       cargarSuscripciones();
+    } catch (error) {
+      console.error(error);
     }
   };
 
-  const eqMensual = (s: any) => s.periodicidad === 'MENSUAL' ? s.cantidad : s.periodicidad === 'ANUAL' ? s.cantidad / 12 : s.cantidad * (365/30) / 12;
-  const eqAnual = (s: any) => s.periodicidad === 'ANUAL' ? s.cantidad : s.periodicidad === 'MENSUAL' ? s.cantidad * 12 : s.cantidad * (365/30);
+  const eqMensual = (s: Suscripcion) => s.periodicidad === 'MENSUAL' ? s.cantidad : s.periodicidad === 'ANUAL' ? s.cantidad / 12 : s.cantidad * (365/30) / 12;
+  const eqAnual = (s: Suscripcion) => s.periodicidad === 'ANUAL' ? s.cantidad : s.periodicidad === 'MENSUAL' ? s.cantidad * 12 : s.cantidad * (365/30);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

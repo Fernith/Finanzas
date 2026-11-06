@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { TrendingDown, Search, Filter, X } from 'lucide-react';
 import { useTransacciones } from '../hooks/useTransacciones';
-import { formatearMoneda } from '../utils/formatters';
+import { formatearMoneda, redondearMoneda } from '../utils/formatters';
+import type { BarraMediaCategoria, BarraMesOperacion, CategoriaStatOperacion, SankeyData, Transaction } from '../types';
 import SelectorMesAno from '../components/operaciones/SelectorMesAno';
 import ModalTransaccion from '../components/operaciones/ModalTransaccion';
 import ModalConfirmacion from '../components/general/ModalConfirmacion';
@@ -23,7 +24,7 @@ export default function Gastos() {
   const { transaccionesAnuales, transacciones, fetchTransacciones, togglePendiente, eliminarTransaccion } = useTransacciones('GASTO', month, year);
 
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [transaccionAEditar, setTransaccionAEditar] = useState<any>(null);
+  const [transaccionAEditar, setTransaccionAEditar] = useState<Transaction | null>(null);
   const [idAEliminar, setIdAEliminar] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function Gastos() {
   const categoriasUnicas = useMemo(() => Array.from(new Set(transaccionesAnuales.map(t => t.categoria))), [transaccionesAnuales]);
   const cuentasUnicas = useMemo(() => Array.from(new Set(transaccionesAnuales.map(t => t.cuenta))), [transaccionesAnuales]);
 
-  const toggleArray = (arr: string[], val: string, setArr: any) => {
+  const toggleArray = (arr: string[], val: string, setArr: Dispatch<SetStateAction<string[]>>) => {
     setArr(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]);
   };
 
@@ -69,54 +70,54 @@ export default function Gastos() {
   const currentMonth = new Date().getMonth() + 1;
   const divisorMedia = year < currentYear ? 12 : year > currentYear ? 1 : currentMonth;
 
-  const realesMes = tMensualesFiltradas.filter(t => !t.pendiente).reduce((a, b) => a + b.cantidad, 0);
-  const totalesMes = tMensualesFiltradas.reduce((a, b) => a + b.cantidad, 0);
-  const realesAnual = tAnualesFiltradas.filter(t => !t.pendiente).reduce((a, b) => a + b.cantidad, 0);
-  const totalesAnual = tAnualesFiltradas.reduce((a, b) => a + b.cantidad, 0);
+  const realesMes = redondearMoneda(tMensualesFiltradas.filter(t => !t.pendiente).reduce((a, b) => a + b.cantidad, 0));
+  const totalesMes = redondearMoneda(tMensualesFiltradas.reduce((a, b) => a + b.cantidad, 0));
+  const realesAnual = redondearMoneda(tAnualesFiltradas.filter(t => !t.pendiente).reduce((a, b) => a + b.cantidad, 0));
+  const totalesAnual = redondearMoneda(tAnualesFiltradas.reduce((a, b) => a + b.cantidad, 0));
 
-  const categoriasStats = useMemo(() => {
+  const categoriasStats = useMemo<CategoriaStatOperacion[]>(() => {
     const agrupado: Record<string, { nombre: string, color: string, totalAnual: number, totalMes: number }> = {};
     tAnualesFiltradas.filter(t => !t.pendiente).forEach(t => {
       if (!agrupado[t.categoria]) { agrupado[t.categoria] = { nombre: t.categoria, color: t.color_categoria || '#ef4444', totalAnual: 0, totalMes: 0 }; }
-      agrupado[t.categoria].totalAnual += t.cantidad;
+      agrupado[t.categoria].totalAnual = redondearMoneda(agrupado[t.categoria].totalAnual + t.cantidad);
     });
     tMensualesFiltradas.filter(t => !t.pendiente).forEach(t => {
-      if (agrupado[t.categoria]) { agrupado[t.categoria].totalMes += t.cantidad; }
+      if (agrupado[t.categoria]) { agrupado[t.categoria].totalMes = redondearMoneda(agrupado[t.categoria].totalMes + t.cantidad); }
     });
     return Object.values(agrupado).map(c => {
-      const media = c.totalAnual / divisorMedia;
+      const media = redondearMoneda(c.totalAnual / divisorMedia);
       const evolucion = media > 0 ? ((c.totalMes - media) / media) * 100 : 0;
       return { ...c, media, evolucion };
     }).sort((a, b) => b.totalMes - a.totalMes);
   }, [tAnualesFiltradas, tMensualesFiltradas, divisorMedia]);
 
-  const sankeyMes = useMemo(() => {
+  const sankeyMes = useMemo<SankeyData | null>(() => {
     const cats = categoriasStats.filter(c => c.totalMes > 0);
     if(cats.length === 0) return null;
     return { nodes: [ ...cats.map(c => ({ name: c.nombre, fill: c.color })), { name: `Gastos`, fill: '#ef4444' } ], links: cats.map((c, i) => ({ source: i, target: cats.length, value: c.totalMes })) };
   }, [categoriasStats]);
 
-  const sankeyAnual = useMemo(() => {
+  const sankeyAnual = useMemo<SankeyData | null>(() => {
     const cats = categoriasStats.filter(c => c.totalAnual > 0);
     if(cats.length === 0) return null;
     return { nodes: [ ...cats.map(c => ({ name: c.nombre, fill: c.color })), { name: `Gastos`, fill: '#ef4444' } ], links: cats.map((c, i) => ({ source: i, target: cats.length, value: c.totalAnual })) };
   }, [categoriasStats]);
 
-  const barrasMesAMes = useMemo(() => {
+  const barrasMesAMes = useMemo<BarraMesOperacion[]>(() => {
     const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
     return meses.map((m, i) => {
-      const datosDelMes: any = { mes: m };
+      const datosDelMes: BarraMesOperacion = { mes: m };
       tAnualesFiltradas
-        .filter(t => !t.pendiente && parseInt(t.fecha.split('-')[1]) === i + 1)
+        .filter(t => !t.pendiente && parseInt(t.fecha.split('-')[1], 10) === i + 1)
         .forEach(t => {
-          if (!datosDelMes[t.categoria]) datosDelMes[t.categoria] = 0;
-          datosDelMes[t.categoria] += t.cantidad;
+          const valorPrevio = typeof datosDelMes[t.categoria] === 'number' ? datosDelMes[t.categoria] : 0;
+          datosDelMes[t.categoria] = redondearMoneda(Number(valorPrevio) + t.cantidad);
         });
       return datosDelMes;
     });
   }, [tAnualesFiltradas]);
 
-  const barrasMediaCategorias = useMemo(() => [...categoriasStats].sort((a, b) => b.media - a.media).map(c => ({ categoria: c.nombre, Media: Math.round(c.media), fill: c.color })), [categoriasStats]);
+  const barrasMediaCategorias = useMemo<BarraMediaCategoria[]>(() => [...categoriasStats].sort((a, b) => b.media - a.media).map(c => ({ categoria: c.nombre, Media: Math.round(c.media), fill: c.color })), [categoriasStats]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12 w-full">
@@ -226,7 +227,7 @@ export default function Gastos() {
         />
       )}
 
-      <ModalTransaccion isOpen={modalAbierto} onClose={() => { setModalAbierto(false); setTransaccionAEditar(null); }} onSuccess={fetchTransacciones} transaccionAEditar={transaccionAEditar} tipoInicial="GASTO" />
+      <ModalTransaccion isOpen={modalAbierto} onClose={() => { setModalAbierto(false); setTransaccionAEditar(null); }} onSuccess={() => fetchTransacciones(busquedaActiva)} transaccionAEditar={transaccionAEditar} tipoInicial="GASTO" />
       <ModalConfirmacion 
         isOpen={!!idAEliminar} 
         onClose={() => setIdAEliminar(null)} 

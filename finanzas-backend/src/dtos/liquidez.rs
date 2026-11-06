@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct CuentaLiquidezDTO {
     pub cuenta_id: String,
     pub nombre: String,
@@ -11,6 +12,7 @@ pub struct CuentaLiquidezDTO {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "snake_case")]
 pub struct HistorialSaldoDTO { 
     pub id: String, 
     pub fecha: String, 
@@ -18,6 +20,7 @@ pub struct HistorialSaldoDTO {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct NuevoSaldoDTO { 
     pub cuenta_id: String, 
     pub fecha: String, 

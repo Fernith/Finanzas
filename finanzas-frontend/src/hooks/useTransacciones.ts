@@ -1,24 +1,24 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { operacionesApi } from '../api/client';
 import type { Transaction } from '../types';
 
 export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year: number) {
   const [transaccionesAnuales, setTransaccionesAnuales] = useState<Transaction[]>([]);
   const [transacciones, setTransacciones] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const ultimoTerminoBusqueda = useRef('');
 
   const fetchTransacciones = useCallback(async (searchTerm = '') => {
+    ultimoTerminoBusqueda.current = searchTerm;
     setLoading(true);
     try {
-      const url = `/api/${tipo.toLowerCase()}s?mes=0&anio=${year}&buscar=${encodeURIComponent(searchTerm)}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      
+      const data = await operacionesApi.listar(tipo, 0, year, searchTerm);
       setTransaccionesAnuales(data);
-      
+
       if (searchTerm) {
         setTransacciones(data);
       } else {
-        setTransacciones(data.filter((t: Transaction) => parseInt(t.fecha.split('-')[1]) === month));
+        setTransacciones(data.filter((t: Transaction) => parseInt(t.fecha.split('-')[1], 10) === month));
       }
     } catch (error) {
       console.error(error);
@@ -28,40 +28,36 @@ export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year:
   }, [tipo, month, year]);
 
   useEffect(() => {
-    fetchTransacciones();
+    fetchTransacciones(ultimoTerminoBusqueda.current);
   }, [fetchTransacciones]);
 
-  // Añadimos el searchTerm para no perder la vista si el usuario estaba buscando algo
-  const togglePendiente = async (id: string, searchTerm: string = '') => {
+  useEffect(() => {
+    const handler = () => {
+      fetchTransacciones(ultimoTerminoBusqueda.current);
+    };
+    window.addEventListener('actualizarTransacciones', handler);
+    return () => window.removeEventListener('actualizarTransacciones', handler);
+  }, [fetchTransacciones]);
+
+  const togglePendiente = async (id: string, searchTerm = '') => {
     try {
-      // Intentamos con PUT primero (fallback a PATCH por si tu axum router lo exige)
-      let res = await fetch(`/api/${tipo.toLowerCase()}s/${id}/completar`, { method: 'PUT' });
-      
-      if (!res.ok && res.status === 405) {
-        res = await fetch(`/api/${tipo.toLowerCase()}s/${id}/completar`, { method: 'PATCH' });
-      }
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || 'Error interno del servidor al actualizar');
-      }
-
+      await operacionesApi.completar(tipo, id);
       fetchTransacciones(searchTerm);
-    } catch (e: any) { 
-      console.error('Error al activar operación:', e); 
-      alert(`No se pudo completar la operación. \nDetalle: ${e.message}`);
+    } catch (e: unknown) {
+      const detalle = e instanceof Error ? e.message : 'Error desconocido';
+      console.error('Error al activar operación:', e);
+      alert(`No se pudo completar la operación. \nDetalle: ${detalle}`);
     }
   };
 
-  const eliminarTransaccion = async (id: string, searchTerm: string = '') => {
+  const eliminarTransaccion = async (id: string, searchTerm = '') => {
     try {
-      const res = await fetch(`/api/${tipo.toLowerCase()}s/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Fallo al eliminar en el servidor');
-      
+      await operacionesApi.eliminar(tipo, id);
       fetchTransacciones(searchTerm);
-    } catch (e: any) { 
-      console.error('Error al eliminar:', e); 
-      alert(`No se pudo eliminar la operación. \nDetalle: ${e.message}`);
+    } catch (e: unknown) {
+      const detalle = e instanceof Error ? e.message : 'Error desconocido';
+      console.error('Error al eliminar:', e);
+      alert(`No se pudo eliminar la operación. \nDetalle: ${detalle}`);
     }
   };
 

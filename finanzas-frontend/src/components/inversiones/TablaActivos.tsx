@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Pencil, ArrowUpDown, Trash2 } from 'lucide-react';
 import { formatearMoneda } from '../../utils/formatters';
+import type { Activo, ActivoConTransacciones, TransaccionInversion } from '../../types';
 
 type Props = {
-  activosConTransacciones: any[];
-  onEditActivo: (activo: any) => void;
-  onEditTransaccion: (transaccion: any) => void;
+  activosConTransacciones: ActivoConTransacciones[];
+  onEditActivo: (activo: Activo) => void;
+  onEditTransaccion: (transaccion: TransaccionInversion) => void;
   onDeleteTransaccion: (id: string) => void;
 };
 

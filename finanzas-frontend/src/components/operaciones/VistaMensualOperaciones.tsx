@@ -3,12 +3,12 @@ import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatt
 import GraficoResumen from './GraficoResumen';
 import TransactionTable from './TransactionTable';
 import DiagramaSankey from './DiagramaSankey';
-import type { Transaction } from '../../types';
+import type { CategoriaStatOperacion, SankeyData, Transaction } from '../../types';
 
 type Props = {
-  categoriasStats: any[];
+  categoriasStats: CategoriaStatOperacion[];
   transacciones: Transaction[];
-  sankeyMes: any;
+  sankeyMes: SankeyData | null;
   onEdit: (t: Transaction) => void;
   onDelete: (id: string) => void;
   onTogglePendiente: (id: string) => void;

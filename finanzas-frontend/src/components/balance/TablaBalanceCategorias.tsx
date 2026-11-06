@@ -1,9 +1,10 @@
 import { formatearMoneda } from '../../utils/formatters';
+import type { FilaCategoriaBalance, ResumenMesBalance } from '../../types';
 
 type Props = { 
-  tablaCategorias: any[]; 
+  tablaCategorias: FilaCategoriaBalance[]; 
   mesesNombres: string[]; 
-  resumenMensual: any[]; 
+  resumenMensual: ResumenMesBalance[]; 
   totalGlobal: number; 
   tipo: 'GASTO' | 'INGRESO';
 };

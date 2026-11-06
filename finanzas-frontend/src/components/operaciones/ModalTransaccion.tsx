@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, User } from 'lucide-react';
+import { ajustesApi, inversionesApi, operacionesApi } from '../../api/client';
+import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
+import type { Activo, CategoriaItem, CuentaItem, Transaction } from '../../types';
 
 export type TipoTransaccion = 'GASTO' | 'INGRESO' | 'INVERSION';
 
@@ -7,12 +10,12 @@ type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  transaccionAEditar?: any;
+  transaccionAEditar?: Transaction | null;
   tipoInicial?: TipoTransaccion;
 };
 
 export default function ModalTransaccion({ isOpen, onClose, onSuccess, transaccionAEditar, tipoInicial = 'GASTO' }: ModalProps) {
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = obtenerFechaHoyEsp();
   
   const [form, setForm] = useState({
     tipo: tipoInicial,
@@ -26,9 +29,9 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
     campo_extra_ingreso: ''
   });
 
-  const [categorias, setCategorias] = useState<any[]>([]);
-  const [cuentas, setCuentas] = useState<any[]>([]);
-  const [activos, setActivos] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
+  const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
+  const [activos, setActivos] = useState<Activo[]>([]);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -53,13 +56,13 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         try {
           // Cargamos todos los catálogos en paralelo
           const [resCat, resCta, resAct] = await Promise.all([
-            fetch('/api/ajustes/categorias').then(r => r.json()),
-            fetch('/api/ajustes/cuentas').then(r => r.json()),
-            fetch('/api/inversiones/activos').then(r => r.json())
+            ajustesApi.listarCategorias(),
+            ajustesApi.listarCuentas(),
+            inversionesApi.listarActivos()
           ]);
 
-          const activeCat = resCat.filter((c: any) => c.activo !== false);
-          const activeCta = resCta.filter((c: any) => c.activo !== false);
+          const activeCat = resCat.filter((c) => c.activo !== false);
+          const activeCta = resCta.filter((c) => c.activo !== false);
 
           setCategorias(activeCat);
           setCuentas(activeCta);
@@ -68,8 +71,8 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
           // Asignación segura de IDs por defecto
           setForm(prev => ({
             ...prev,
-            categoria_id: prev.categoria_id || (transaccionAEditar ? (activeCat.find((c:any) => c.nombre === transaccionAEditar.categoria)?.id || '') : ''),
-            cuenta_id: prev.cuenta_id || (transaccionAEditar ? (activeCta.find((c:any) => c.nombre === transaccionAEditar.cuenta)?.id || '') : (activeCta.length > 0 ? activeCta[0].id : '')),
+            categoria_id: prev.categoria_id || (transaccionAEditar ? (activeCat.find((c) => c.nombre === transaccionAEditar.categoria)?.id || '') : ''),
+            cuenta_id: prev.cuenta_id || (transaccionAEditar ? (activeCta.find((c) => c.nombre === transaccionAEditar.cuenta)?.id || '') : (activeCta.length > 0 ? activeCta[0].id : '')),
             activo_ticker: resAct.length > 0 ? resAct[0].ticker : ''
           }));
         } catch (e) {
@@ -94,10 +97,10 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
   
   const categoriasFiltradas = categorias.filter(c => c.tipo_operacion_id === form.tipo);
 
-  const handleSubmit = async (e: React.SyntheticEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const cantidadLimpia = Math.round(parseFloat(String(form.cantidad).replace(',', '.')) * 100) / 100;
+    const cantidadLimpia = redondearMoneda(parseFloat(String(form.cantidad).replace(',', '.')));
     if (isNaN(cantidadLimpia) || cantidadLimpia <= 0) { alert('Introduce una cantidad válida.'); return; }
 
     setEnviando(true);
@@ -107,33 +110,69 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         if (!form.activo_ticker || !form.cuenta_id) { alert('Selecciona un activo y una cuenta.'); setEnviando(false); return; }
         
         const activoSeleccionado = activos.find(a => a.ticker === form.activo_ticker);
+        const categoriaReflejoId =
+          activoSeleccionado?.categoria_id ||
+          categorias.find((c) => c.tipo_operacion_id === 'INVERSION')?.id ||
+          categorias.find((c) => c.tipo_operacion_id === 'GASTO')?.id ||
+          '';
         
         // 1. Guardar la Inversión (Aportación)
-        await fetch('/api/inversiones/transacciones', { 
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha_compra: form.fecha, euros_invertidos: cantidadLimpia, activo_ticker: form.activo_ticker, cuenta_id: form.cuenta_id }) 
+        await inversionesApi.crearTransaccion({
+          fecha_compra: form.fecha,
+          euros_invertidos: cantidadLimpia,
+          activo_ticker: form.activo_ticker,
+          cuenta_id: form.cuenta_id,
         });
 
         // 2. Crear Gasto reflejo para restar la liquidez bancaria
-        await fetch('/api/gastos', { 
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: activoSeleccionado?.categoria_id || null, cuenta_id: form.cuenta_id, descripcion: `Inversión: ${activoSeleccionado?.nombre || form.activo_ticker}`, pendiente: false }) 
+        await operacionesApi.crearGasto({
+          fecha: form.fecha,
+          cantidad: cantidadLimpia,
+          categoria_id: categoriaReflejoId,
+          cuenta_id: form.cuenta_id,
+          descripcion: `Inversión: ${activoSeleccionado?.nombre || form.activo_ticker}`,
+          pendiente: false,
         });
 
       } else {
         // Gasto / Ingreso Normal
         if (!form.categoria_id || !form.cuenta_id) { alert('Selecciona una categoría y cuenta.'); setEnviando(false); return; }
 
-        const payload = { fecha: form.fecha, cantidad: cantidadLimpia, categoria_id: form.categoria_id, cuenta_id: form.cuenta_id, descripcion: form.descripcion.trim() || null, pendiente: form.pendiente, campo_extra_ingreso: form.campo_extra_ingreso };
-        const urls: any = { GASTO: '/api/gastos', INGRESO: '/api/ingresos' };
-        const url = transaccionAEditar ? `${urls[form.tipo]}/${transaccionAEditar.id}` : urls[form.tipo];
-        const method = transaccionAEditar ? 'PUT' : 'POST';
-
-        const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        if (!res.ok) throw new Error('Error de servidor');
+        if (form.tipo === 'GASTO') {
+          const payload = {
+            fecha: form.fecha,
+            cantidad: cantidadLimpia,
+            categoria_id: form.categoria_id,
+            cuenta_id: form.cuenta_id,
+            descripcion: form.descripcion.trim() || null,
+            pendiente: form.pendiente,
+          };
+          if (transaccionAEditar) {
+            await operacionesApi.actualizarGasto(transaccionAEditar.id, payload);
+          } else {
+            await operacionesApi.crearGasto(payload);
+          }
+        } else {
+          const payload = {
+            fecha: form.fecha,
+            cantidad: cantidadLimpia,
+            categoria_id: form.categoria_id,
+            cuenta_id: form.cuenta_id,
+            descripcion: form.descripcion.trim() || null,
+            pendiente: form.pendiente,
+            campo_extra_ingreso: form.campo_extra_ingreso.trim() || null,
+          };
+          if (transaccionAEditar) {
+            await operacionesApi.actualizarIngreso(transaccionAEditar.id, payload);
+          } else {
+            await operacionesApi.crearIngreso(payload);
+          }
+        }
       }
 
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch {
       alert('Error de red al guardar.');
     } finally {
       setEnviando(false);

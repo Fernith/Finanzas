@@ -1,16 +1,29 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X, Save } from 'lucide-react';
+import { suscripcionesApi } from '../../api/client';
+import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
+import type { CuentaItem, PeriodicidadSuscripcion, Suscripcion } from '../../types';
 
 type Props = { 
   isOpen: boolean; 
   onClose: () => void; 
   onSuccess: () => void; 
-  suscripcionAEditar: any; 
-  cuentas: any[]; 
+  suscripcionAEditar: Suscripcion | null; 
+  cuentas: CuentaItem[]; 
 };
 
+interface FormSuscripcion {
+  nombre: string;
+  cantidad: string;
+  cuenta_id: string;
+  fecha_inicio: string;
+  fecha_proxima_renovacion: string;
+  periodicidad: PeriodicidadSuscripcion;
+  activo: boolean;
+}
+
 export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripcionAEditar, cuentas }: Props) {
-  const [form, setForm] = useState({ 
+  const [form, setForm] = useState<FormSuscripcion>({ 
     nombre: '', cantidad: '', cuenta_id: '', fecha_inicio: '', 
     fecha_proxima_renovacion: '', periodicidad: 'MENSUAL', activo: true 
   });
@@ -25,13 +38,21 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
 
   useEffect(() => {
     if (suscripcionAEditar) { 
-      setForm({ ...suscripcionAEditar }); 
+      setForm({
+        nombre: suscripcionAEditar.nombre,
+        cantidad: String(suscripcionAEditar.cantidad),
+        cuenta_id: suscripcionAEditar.cuenta_id,
+        fecha_inicio: suscripcionAEditar.fecha_inicio,
+        fecha_proxima_renovacion: suscripcionAEditar.fecha_proxima_renovacion,
+        periodicidad: suscripcionAEditar.periodicidad,
+        activo: Boolean(suscripcionAEditar.activo ?? true),
+      }); 
     } else { 
       setForm({ 
         nombre: '', 
         cantidad: '', 
         cuenta_id: cuentasValidas.length > 0 ? cuentasValidas[0].id : '', 
-        fecha_inicio: new Date().toISOString().split('T')[0], 
+        fecha_inicio: obtenerFechaHoyEsp(), 
         fecha_proxima_renovacion: '', 
         periodicidad: 'MENSUAL', 
         activo: true 
@@ -41,13 +62,15 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
 
   useEffect(() => {
     if (!suscripcionAEditar && form.fecha_inicio && !form.fecha_proxima_renovacion) {
-      const d = new Date(form.fecha_inicio);
+      const [anio, mes, dia] = form.fecha_inicio.split('-').map(Number);
+      const d = new Date(anio, mes - 1, dia);
       if (form.periodicidad === 'MENSUAL') d.setMonth(d.getMonth() + 1);
       else if (form.periodicidad === 'ANUAL') d.setFullYear(d.getFullYear() + 1);
       else if (form.periodicidad === '30_DIAS') d.setDate(d.getDate() + 30);
-      setForm(prev => ({ ...prev, fecha_proxima_renovacion: d.toISOString().split('T')[0] }));
+      const fechaCalculada = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      setForm(prev => ({ ...prev, fecha_proxima_renovacion: fechaCalculada }));
     }
-  }, [form.fecha_inicio, form.periodicidad, suscripcionAEditar]);
+  }, [form.fecha_inicio, form.periodicidad, form.fecha_proxima_renovacion, suscripcionAEditar]);
 
   // Se añade el tipado estricto <HTMLFormElement> para solucionar el aviso
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -56,28 +79,19 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
     // Forzamos el casteo a número para evitar el Error 422 de Rust
     const payload = {
       ...form,
-      cantidad: Number(form.cantidad)
+      cantidad: redondearMoneda(Number(form.cantidad))
     };
-
-    const url = suscripcionAEditar ? `/api/suscripciones/${suscripcionAEditar.id}` : '/api/suscripciones';
-    const method = suscripcionAEditar ? 'PUT' : 'POST';
     
     try {
-      const res = await fetch(url, { 
-        method, 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(payload) 
-      });
-      
-      if (res.ok) {
-        onSuccess(); 
-        onClose();
+      if (suscripcionAEditar) {
+        await suscripcionesApi.modificar(suscripcionAEditar.id, payload);
       } else {
-        const errorText = await res.text();
-        alert(`No se pudo guardar: ${errorText}`);
+        await suscripcionesApi.crear(payload);
       }
-    } catch (error) {
-      alert("Error de conexión al guardar la suscripción.");
+      onSuccess(); 
+      onClose();
+    } catch {
+      alert("Error al guardar la suscripción.");
     }
   };
 
@@ -106,7 +120,7 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1 dark:text-slate-300">Periodicidad</label>
-              <select value={form.periodicidad} onChange={e => setForm({...form, periodicidad: e.target.value})} className="w-full p-2.5 bg-slate-100 dark:bg-neutral-800 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/50 dark:text-white cursor-pointer">
+              <select value={form.periodicidad} onChange={e => setForm({...form, periodicidad: e.target.value as PeriodicidadSuscripcion})} className="w-full p-2.5 bg-slate-100 dark:bg-neutral-800 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/50 dark:text-white cursor-pointer">
                 <option value="MENSUAL">Mensual</option>
                 <option value="ANUAL">Anual</option>
                 <option value="30_DIAS">Cada 30 Días</option>

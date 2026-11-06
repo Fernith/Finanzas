@@ -1,14 +1,15 @@
 import { Pencil, Trash2, History, ArrowDownToLine, ArrowUpFromLine, Flag } from 'lucide-react';
 import { formatearMoneda } from '../../utils/formatters';
+import type { MetaAhorro } from '../../types';
 
 type MetaCardProps = {
-  meta: any;
-  onEdit: (meta: any) => void;
-  onDelete: (meta: any) => void;
-  onHistory: (meta: any) => void;
-  onAdd: (meta: any) => void;
-  onWithdraw: (meta: any) => void;
-  onFinish: (meta: any) => void;
+  meta: MetaAhorro;
+  onEdit: (meta: MetaAhorro) => void;
+  onDelete: (meta: MetaAhorro) => void;
+  onHistory: (meta: MetaAhorro) => void;
+  onAdd: (meta: MetaAhorro) => void;
+  onWithdraw: (meta: MetaAhorro) => void;
+  onFinish: (meta: MetaAhorro) => void;
 };
 
 export default function MetaCard({ meta, onEdit, onDelete, onHistory, onAdd, onWithdraw, onFinish }: MetaCardProps) {

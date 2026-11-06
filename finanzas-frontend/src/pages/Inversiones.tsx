@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, TrendingUp } from 'lucide-react';
 import { useInversiones } from '../hooks/useInversiones';
 import { formatearMoneda } from '../utils/formatters';
+import type { Activo, TransaccionInversion } from '../types';
 
 import TablaActivos from '../components/inversiones/TablaActivos';
 import ModalActivoInversion from '../components/inversiones/ModalActivoInversiones';
@@ -19,11 +20,11 @@ export default function Inversiones() {
   } = useInversiones();
   
   const [isModalActivoOpen, setIsModalActivoOpen] = useState(false);
-  const [activoAEditar, setActivoAEditar] = useState<any>(null);
-  const [transaccionAEditar, setTransaccionAEditar] = useState<any>(null);
+  const [activoAEditar, setActivoAEditar] = useState<Activo | null>(null);
+  const [transaccionAEditar, setTransaccionAEditar] = useState<TransaccionInversion | null>(null);
   const [idTransaccionEliminar, setIdTransaccionEliminar] = useState<string | null>(null);
 
-  const handleEditActivo = (activo: any) => {
+  const handleEditActivo = (activo: Activo) => {
     setActivoAEditar(activo);
     setIsModalActivoOpen(true);
   };

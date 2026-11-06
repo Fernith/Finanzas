@@ -1,11 +1,12 @@
 import DiagramaSankey from './DiagramaSankey';
 import GraficoEvolucionAnual from './GraficoEvolucionAnual';
 import GraficoMediaCategorias from './GraficoMediaCategorias';
+import type { BarraMediaCategoria, BarraMesOperacion, SankeyData } from '../../types';
 
 type Props = { 
-  barrasMesAMes: any[]; 
-  barrasMediaCategorias: any[]; 
-  sankeyAnual: any; 
+  barrasMesAMes: BarraMesOperacion[]; 
+  barrasMediaCategorias: BarraMediaCategoria[]; 
+  sankeyAnual: SankeyData | null; 
   year: number; 
   tipo: 'GASTO' | 'INGRESO';
   categorias: { nombre: string; color: string }[];

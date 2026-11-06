@@ -48,54 +48,64 @@ pub async fn obtener_gastos(
 
     let total_count = rows.first().map(|r| r.total_filas).unwrap_or(0);
     let gastos: Vec<GastoDTO> = rows.into_iter().map(|r| GastoDTO {
-        id: r.id, fecha: r.fecha, cantidad: r.cantidad, categoria: r.categoria, color_categoria: r.color_categoria, cuenta: r.cuenta, descripcion: r.descripcion, pendiente: r.pendiente
+        id: r.id,
+        fecha: r.fecha,
+        cantidad: (r.cantidad * 100.0).round() / 100.0,
+        categoria: r.categoria,
+        color_categoria: r.color_categoria,
+        cuenta: r.cuenta,
+        descripcion: r.descripcion,
+        pendiente: r.pendiente,
     }).collect();
 
     let mut headers = HeaderMap::new();
-    headers.insert("x-total-count", axum::http::HeaderValue::from_str(&total_count.to_string()).unwrap());
+    headers.insert("x-total-count", axum::http::HeaderValue::from_str(&total_count.to_string())?);
     Ok((headers, Json(gastos)))
 }
 
-pub async fn obtener_categorias_gastos(State(pool): State<PgPool>) -> impl IntoResponse {
+pub async fn obtener_categorias_gastos(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         MaestroDTO,
         r#"SELECT c.id::text as "id!", c.nombre, c.color as "color", c.activo FROM categorias c  WHERE c.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
-    ).fetch_all(&pool).await;
-    match rows { Ok(cats) => Json(cats).into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
+    ).fetch_all(&pool).await?;
+    Ok(Json(rows))
 }
 
-pub async fn obtener_cuentas_gastos(State(pool): State<PgPool>) -> impl IntoResponse {
+pub async fn obtener_cuentas_gastos(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         MaestroDTO,
         r#"SELECT c.id::text as "id!", c.nombre, c.color, c.activo FROM cuentas c JOIN cuentas_tipos_operacion ct ON c.id = ct.cuenta_id WHERE ct.tipo_operacion_id = 'GASTO'::tipo_operacion_enum ORDER BY c.orden ASC, c.nombre ASC"#
-    ).fetch_all(&pool).await;
-    match rows { Ok(cuentas) => Json(cuentas).into_response(), Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() }
+    ).fetch_all(&pool).await?;
+    Ok(Json(rows))
 }
 
-pub async fn crear_gasto(State(pool): State<PgPool>, Json(payload): Json<NuevoGastoDTO>) -> impl IntoResponse {
-    let result = sqlx::query(r#"INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente) VALUES ('GASTO'::tipo_operacion_enum, $1::text::date, $2::float8::numeric, $3::text::uuid, $4::text::uuid, $5, $6::boolean)"#).bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).execute(&pool).await;
-    match result { Ok(_) => (StatusCode::CREATED, "OK").into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
+pub async fn crear_gasto(State(pool): State<PgPool>, Json(payload): Json<NuevoGastoDTO>) -> Result<impl IntoResponse, AppError> {
+    let cantidad_redondeada = (payload.cantidad * 100.0).round() / 100.0;
+    sqlx::query(r#"INSERT INTO operaciones (tipo_operacion_id, fecha, cantidad, categoria_id, cuenta_id, descripcion, pendiente) VALUES ('GASTO'::tipo_operacion_enum, $1::text::date, ROUND($2::float8::numeric, 2), $3::text::uuid, $4::text::uuid, $5, $6::boolean)"#)
+        .bind(&payload.fecha).bind(cantidad_redondeada).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente)
+        .execute(&pool).await?;
+    Ok((StatusCode::CREATED, "OK"))
 }
 
-pub async fn actualizar_gasto(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<NuevoGastoDTO>) -> impl IntoResponse {
-    let result = sqlx::query(r#"UPDATE operaciones SET fecha = $1::text::date, cantidad = $2::float8::numeric, categoria_id = $3::text::uuid, cuenta_id = $4::text::uuid, descripcion = $5, pendiente = $6::boolean WHERE id = $7::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum"#).bind(&payload.fecha).bind(payload.cantidad).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).bind(&id).execute(&pool).await;
-    match result { Ok(_) => (StatusCode::OK, "OK").into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
+pub async fn actualizar_gasto(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<NuevoGastoDTO>) -> Result<impl IntoResponse, AppError> {
+    let cantidad_redondeada = (payload.cantidad * 100.0).round() / 100.0;
+    sqlx::query(r#"UPDATE operaciones SET fecha = $1::text::date, cantidad = ROUND($2::float8::numeric, 2), categoria_id = $3::text::uuid, cuenta_id = $4::text::uuid, descripcion = $5, pendiente = $6::boolean WHERE id = $7::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum"#)
+        .bind(&payload.fecha).bind(cantidad_redondeada).bind(&payload.categoria_id).bind(&payload.cuenta_id).bind(&payload.descripcion).bind(payload.pendiente).bind(&id)
+        .execute(&pool).await?;
+    Ok((StatusCode::OK, "OK"))
 }
 
-pub async fn eliminar_gasto(State(pool): State<PgPool>, Path(id): Path<String>) -> impl IntoResponse {
-    let result = sqlx::query!("DELETE FROM operaciones WHERE id = $1::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum", id).execute(&pool).await;
-    match result { Ok(_) => (StatusCode::OK, "OK").into_response(), Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response() }
+pub async fn eliminar_gasto(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
+    sqlx::query!("DELETE FROM operaciones WHERE id = $1::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum", id).execute(&pool).await?;
+    Ok((StatusCode::OK, "OK"))
 }
 
-pub async fn completar_operacion(State(pool): State<PgPool>, Path(id): Path<String>) -> impl IntoResponse {
+pub async fn completar_operacion(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
     // Añadido ::text::uuid para asegurar la conversión correcta
-    let result = sqlx::query("UPDATE operaciones SET pendiente = false WHERE id = $1::text::uuid")
+    sqlx::query("UPDATE operaciones SET pendiente = false WHERE id = $1::text::uuid")
         .bind(&id)
         .execute(&pool)
-        .await;
+        .await?;
         
-    match result { 
-        Ok(_) => (StatusCode::OK, "OK").into_response(), 
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response() 
-    }
+    Ok((StatusCode::OK, "OK"))
 }

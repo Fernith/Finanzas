@@ -1,7 +1,18 @@
 import { ResponsiveContainer, Sankey, Layer, Rectangle, Tooltip as RechartsTooltip } from 'recharts';
 import { formatearMoneda } from '../../utils/formatters';
+import type { SankeyData } from '../../types';
 
-const renderSankeyNode = ({ x, y, width, height, index, payload, containerWidth }: any) => {
+interface SankeyNodeRenderProps {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  index: number;
+  payload: { name?: string; fill?: string };
+  containerWidth?: number;
+}
+
+const renderSankeyNode = ({ x, y, width, height, index, payload, containerWidth = 0 }: SankeyNodeRenderProps) => {
   // Si el nodo está en la mitad derecha, anclamos el texto al final y lo ponemos a la izquierda de la barra
   const isOut = x > containerWidth / 2;
   return (
@@ -20,7 +31,7 @@ const renderSankeyNode = ({ x, y, width, height, index, payload, containerWidth 
   );
 };
 
-type Props = { data: any; titulo: string; mensajeVacio: string; colorBorderTheme: string; };
+type Props = { data: SankeyData | null; titulo: string; mensajeVacio: string; colorBorderTheme: string; };
 
 export default function DiagramaSankey({ data, titulo, mensajeVacio, colorBorderTheme }: Props) {
   return (
@@ -31,7 +42,7 @@ export default function DiagramaSankey({ data, titulo, mensajeVacio, colorBorder
           <ResponsiveContainer width="100%" height="100%">
             {/* Margen aumentado a la derecha para que no corte los textos */}
             <Sankey data={data} node={renderSankeyNode} nodePadding={30} margin={{ left: 20, right: 100, top: 20, bottom: 20 }} link={{ stroke: '#cbd5e1', strokeOpacity: 0.3 }}>
-              <RechartsTooltip formatter={(((value: number) => [`${formatearMoneda(value)} €`, 'Flujo']) as any)} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <RechartsTooltip formatter={(value) => [`${formatearMoneda(Number(value ?? 0))} €`, 'Flujo']} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
             </Sankey>
           </ResponsiveContainer>
         </div>

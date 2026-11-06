@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { Coins, Target, ShieldCheck, ArrowRightLeft } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { formatearMoneda } from '../../utils/formatters';

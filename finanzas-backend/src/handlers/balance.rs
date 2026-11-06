@@ -1,15 +1,15 @@
 use axum::{
     extract::{Query, State},
     Json, response::IntoResponse,
-    http::StatusCode,
 };
 use sqlx::PgPool;
+use crate::error::AppError;
 use crate::dtos::balance::*;
 
 pub async fn obtener_balance_anual(
     State(pool): State<PgPool>,
     Query(filtro): Query<FiltroAnio>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         OperacionAnualDTO,
         r#"
@@ -27,10 +27,15 @@ pub async fn obtener_balance_anual(
         filtro.anio as f64
     )
     .fetch_all(&pool)
-    .await;
+    .await?;
 
-    match rows {
-        Ok(ops) => Json(ops).into_response(),
-        Err(err) => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()).into_response(),
-    }
+    let ops: Vec<OperacionAnualDTO> = rows
+        .into_iter()
+        .map(|mut op| {
+            op.cantidad = (op.cantidad * 100.0).round() / 100.0;
+            op
+        })
+        .collect();
+
+    Ok(Json(ops))
 }

@@ -1,7 +1,14 @@
 import { X, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatearMoneda } from '../../utils/formatters';
+import type { MetaAhorro } from '../../types';
 
-export default function ModalHistorialMeta({ isOpen, onClose, meta }: any) {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  meta: MetaAhorro | null;
+};
+
+export default function ModalHistorialMeta({ isOpen, onClose, meta }: Props) {
   if (!isOpen || !meta) return null;
 
   return (
@@ -14,7 +21,7 @@ export default function ModalHistorialMeta({ isOpen, onClose, meta }: any) {
         <div className="p-4 overflow-y-auto">
           {meta.movimientos.length > 0 ? (
             <div className="space-y-2">
-              {meta.movimientos.map((m: any) => (
+              {meta.movimientos.map((m) => (
                 <div key={m.id} className="flex justify-between items-center p-3 rounded-xl border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 hover:border-slate-200 dark:hover:border-slate-600 transition-colors">
                   <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300 text-sm">
                     {m.cantidad >= 0 ? <TrendingUp size={16} className="text-emerald-500" /> : <TrendingDown size={16} className="text-red-500" />}

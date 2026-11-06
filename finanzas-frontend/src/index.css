@@ -1,11 +1,6 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Directivas de Tailwind que ya deberías tener */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* 2. Forzamos a que toda la aplicación use esta fuente por defecto */
 @layer base {
   html, body {

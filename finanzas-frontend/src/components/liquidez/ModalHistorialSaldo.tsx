@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { X, Calendar } from 'lucide-react';
+import { liquidezApi } from '../../api/client';
 import { formatearMoneda } from '../../utils/formatters';
+import type { CuentaLiquidez, HistorialSaldo } from '../../types';
 
-type Props = { isOpen: boolean; onClose: () => void; cuenta: any; };
+type Props = { isOpen: boolean; onClose: () => void; cuenta: CuentaLiquidez | null; };
 
 export default function ModalHistorialSaldo({ isOpen, onClose, cuenta }: Props) {
-  const [historial, setHistorial] = useState<any[]>([]);
+  const [historial, setHistorial] = useState<HistorialSaldo[]>([]);
 
   useEffect(() => {
     if (isOpen && cuenta) {
-      fetch(`/api/liquidez/saldos/${cuenta.cuenta_id}`)
-        .then(res => res.json())
+      liquidezApi.obtenerHistorial(cuenta.cuenta_id)
         .then(data => setHistorial(data));
     }
   }, [isOpen, cuenta]);

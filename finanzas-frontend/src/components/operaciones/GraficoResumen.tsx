@@ -1,10 +1,21 @@
 import { PieChart, Pie, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface PieTooltipEntry {
+  name?: string;
+  value?: number;
+  payload?: { fill?: string };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: readonly PieTooltipEntry[];
+}
+
+const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0];
-    const bgColor = data.payload.fill || '#94a3b8';
+    const bgColor = data.payload?.fill || '#94a3b8';
     const textColor = obtenerColorTextoParaFondo(bgColor);
     return (
       <div className="bg-white dark:bg-[#1a1a1a] p-3 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800/80 z-50 flex items-center gap-4">
@@ -14,7 +25,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         >
            {data.name}
         </span>
-        <span className="font-bold text-neutral-900 dark:text-white">{formatearMoneda(data.value)} €</span>
+        <span className="font-bold text-neutral-900 dark:text-white">{formatearMoneda(data.value ?? 0)} €</span>
       </div>
     );
   }

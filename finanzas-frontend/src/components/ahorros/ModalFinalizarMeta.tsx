@@ -1,19 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Tags, WalletCards } from 'lucide-react';
-import { formatearMoneda } from '../../utils/formatters';
+import { ahorrosApi } from '../../api/client';
+import { formatearMoneda, obtenerFechaHoyEsp } from '../../utils/formatters';
+import type { MetaAhorro, OpcionesFinalizar } from '../../types';
 
-export default function ModalFinalizarMeta({ isOpen, onClose, onSuccess, meta }: any) {
-  const [opciones, setOpciones] = useState({ categorias: [], cuentas: [] });
-  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  meta: MetaAhorro | null;
+};
+
+export default function ModalFinalizarMeta({ isOpen, onClose, onSuccess, meta }: Props) {
+  const [opciones, setOpciones] = useState<OpcionesFinalizar>({ categorias: [], cuentas: [] });
+  const [fecha, setFecha] = useState(obtenerFechaHoyEsp());
   const [categoriaId, setCategoriaId] = useState('');
   const [cuentaId, setCuentaId] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetch('/api/ahorros/opciones-finalizar')
-        .then(res => res.json()).then(data => { setOpciones(data); if (data.categorias[0]) setCategoriaId(data.categorias[0].id); if (data.cuentas[0]) setCuentaId(data.cuentas[0].id); });
-      setFecha(new Date().toISOString().split('T')[0]);
+      ahorrosApi.obtenerOpcionesFinalizar()
+        .then(data => {
+          setOpciones(data);
+          if (data.categorias[0]) setCategoriaId(data.categorias[0].id);
+          if (data.cuentas[0]) setCuentaId(data.cuentas[0].id);
+        });
+      setFecha(obtenerFechaHoyEsp());
     }
   }, [isOpen]);
 
@@ -24,12 +37,11 @@ export default function ModalFinalizarMeta({ isOpen, onClose, onSuccess, meta }:
     setEnviando(true);
     
     try {
-      const response = await fetch(`/api/ahorros/metas/${meta.id}/finalizar`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fecha, cuenta_id: cuentaId, categoria_id: categoriaId })
-      });
-      if (response.ok) { onSuccess(); onClose(); } else { alert('Error al finalizar la meta'); }
-    } catch { alert('Error de red'); } finally { setEnviando(false); }
+      await ahorrosApi.finalizarMeta(meta.id, { fecha, cuenta_id: cuentaId, categoria_id: categoriaId });
+      window.dispatchEvent(new Event('actualizarTransacciones'));
+      onSuccess();
+      onClose();
+    } catch { alert('Error al finalizar la meta'); } finally { setEnviando(false); }
   };
 
   return (
@@ -50,13 +62,13 @@ export default function ModalFinalizarMeta({ isOpen, onClose, onSuccess, meta }:
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><Tags size={16}/> Categoría (Gasto)</label>
             <select required value={categoriaId} onChange={e => setCategoriaId(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-100">
-              {opciones.categorias.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {opciones.categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-2"><WalletCards size={16}/> Cuenta Bancaria</label>
             <select required value={cuentaId} onChange={e => setCuentaId(e.target.value)} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm dark:text-white outline-none focus:ring-2 focus:ring-blue-100">
-              {opciones.cuentas.map((c: any) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              {opciones.cuentas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </select>
           </div>
           <div className="flex gap-3 pt-2">

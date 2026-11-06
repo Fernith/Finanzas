@@ -1,20 +1,34 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
+import type { ResumenMesBalance } from '../../types';
+
+interface TooltipEntry {
+  name?: string;
+  value?: number;
+  fill?: string;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: readonly TooltipEntry[];
+  label?: string | number;
+}
 
 // TOOLTIP PERSONALIZADO PARA BARRAS (Al pasar el ratón)
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     // Ordenamos de mayor a menor para que el tooltip tenga más sentido y cuadre con lo que ves
-    const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
+    const sortedPayload = [...payload].sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
     
     return (
       <div className="bg-white dark:bg-[#1a1a1a] p-4 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800/80 z-50 min-w-[200px]">
         <p className="font-bold text-neutral-800 dark:text-white mb-3 text-sm border-b border-neutral-100 dark:border-neutral-800 pb-2">{label}</p>
         <div className="space-y-2.5">
-          {sortedPayload.map((entry: any, index: number) => {
+          {sortedPayload.map((entry, index: number) => {
+             const valor = entry.value ?? 0;
              const bgColor = entry.fill || '#94a3b8';
              const textColor = obtenerColorTextoParaFondo(bgColor);
-             if(entry.value === 0) return null; // No saturar el tooltip si ese mes no hubo gasto en esa categoría
+             if(valor === 0) return null; // No saturar el tooltip si ese mes no hubo gasto en esa categoría
              return (
                <div key={index} className="flex justify-between items-center gap-6 text-sm">
                  <span 
@@ -24,7 +38,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
                    {entry.name}
                  </span>
                  <span className="font-bold text-neutral-900 dark:text-white">
-                   {formatearMoneda(entry.value)} €
+                   {formatearMoneda(valor)} €
                  </span>
                </div>
              )
@@ -36,11 +50,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+interface LegendEntry {
+  value?: string | number;
+  color?: string;
+}
+
+interface CustomLegendProps {
+  payload?: readonly LegendEntry[];
+}
+
 // LEYENDA PERSONALIZADA DE LA GRÁFICA
-const CustomLegend = ({ payload }: any) => {
+const CustomLegend = ({ payload }: CustomLegendProps) => {
+  if (!payload) return null;
   return (
     <div className="flex flex-wrap gap-2 justify-center pt-6">
-      {payload.map((entry: any, index: number) => {
+      {payload.map((entry, index: number) => {
         const bgColor = entry.color || '#94a3b8';
         const textColor = obtenerColorTextoParaFondo(bgColor);
         return (
@@ -57,16 +81,22 @@ const CustomLegend = ({ payload }: any) => {
   );
 };
 
-export default function GraficoBalanceApilado({ resumenMensual, coloresCategorias, dataKeyPrefix }: any) {
+interface GraficoBalanceApiladoProps {
+  resumenMensual: ResumenMesBalance[];
+  coloresCategorias: Record<string, string>;
+  dataKeyPrefix: 'categoriasGastos' | 'categoriasIngresos';
+}
+
+export default function GraficoBalanceApilado({ resumenMensual, coloresCategorias, dataKeyPrefix }: GraficoBalanceApiladoProps) {
   const categoriasUnicas = new Set<string>();
-  resumenMensual.forEach((mes: any) => {
+  resumenMensual.forEach((mes) => {
     Object.keys(mes[dataKeyPrefix] || {}).forEach(cat => categoriasUnicas.add(cat));
   });
   
   const categorias = Array.from(categoriasUnicas);
 
-  const dataAplanada = resumenMensual.map((mes: any) => {
-    const aplanado: any = { mes: mes.mes };
+  const dataAplanada = resumenMensual.map((mes) => {
+    const aplanado: Record<string, string | number> = { mes: mes.mes };
     categorias.forEach(cat => { aplanado[cat] = mes[dataKeyPrefix]?.[cat] || 0; });
     return aplanado;
   });

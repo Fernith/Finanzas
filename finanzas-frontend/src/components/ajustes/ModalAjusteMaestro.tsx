@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Type, Layers, Palette, CheckSquare } from 'lucide-react';
+import { ajustesApi } from '../../api/client';
+import type { CatalogoItem } from '../../types';
 
 type ModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   target: 'categorias' | 'cuentas';
-  itemAEditar?: any;
+  itemAEditar?: CatalogoItem | null;
 };
 
 export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target, itemAEditar }: ModalProps) {
@@ -25,11 +27,11 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
       if (itemAEditar) {
         setNombre(itemAEditar.nombre);
         setColor(itemAEditar.color || '#3b82f6');
-        if (target === 'categorias') {
+        if (target === 'categorias' && 'tipo_operacion_id' in itemAEditar) {
           setTipoOperacionId(itemAEditar.tipo_operacion_id);
           //setGrupoId(itemAEditar.grupo_id || '');
         }
-        if (target === 'cuentas') setTiposCuenta(itemAEditar.tipos_operacion || []);
+        if (target === 'cuentas' && 'tipos_operacion' in itemAEditar) setTiposCuenta(itemAEditar.tipos_operacion || []);
       } else {
         setNombre('');
         setColor('#3b82f6');
@@ -46,7 +48,7 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
     setTiposCuenta(prev => prev.includes(tipo) ? prev.filter(t => t !== tipo) : [...prev, tipo]);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!nombre.trim()) return;
     if (target === 'cuentas' && tiposCuenta.length === 0) {
@@ -55,28 +57,26 @@ export default function ModalAjusteMaestro({ isOpen, onClose, onSuccess, target,
     }
 
     setEnviando(true);
-    
-    let payload: any = { nombre: nombre.trim() };
-    
-    if (target === 'categorias') {
-      payload.tipo_operacion_id = tipoOperacionId;
-      payload.color = color;
-    } else if (target === 'cuentas') {
-      payload.tipos_operacion = tiposCuenta;
-      payload.color = color;
-    }
 
     try {
-      const url = itemAEditar ? `/api/ajustes/${target}/${itemAEditar.id}` : `/api/ajustes/${target}`;
-      const response = await fetch(url, { 
-        method: itemAEditar ? 'PUT' : 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(payload) 
-      });
-
-      if (response.ok) { onSuccess(); onClose(); } 
-      else { alert('Error al guardar.'); }
-    } catch { alert('Error de red.'); } finally { setEnviando(false); }
+      if (target === 'categorias') {
+        const payload = { nombre: nombre.trim(), tipo_operacion_id: tipoOperacionId, color };
+        if (itemAEditar) {
+          await ajustesApi.modificarCategoria(itemAEditar.id, payload);
+        } else {
+          await ajustesApi.crearCategoria(payload);
+        }
+      } else {
+        const payload = { nombre: nombre.trim(), tipos_operacion: tiposCuenta, color };
+        if (itemAEditar) {
+          await ajustesApi.modificarCuenta(itemAEditar.id, payload);
+        } else {
+          await ajustesApi.crearCuenta(payload);
+        }
+      }
+      onSuccess();
+      onClose();
+    } catch { alert('Error al guardar.'); } finally { setEnviando(false); }
   };
 
   const singuloLabel = target === 'categorias' ? 'Categoría' : 'Cuenta';

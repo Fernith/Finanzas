@@ -1,17 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
+import { ajustesApi, inversionesApi } from '../../api/client';
+import type { Activo, CategoriaItem } from '../../types';
 
-export default function ModalActivoInversiones({ isOpen, onClose, onSuccess, activoAEditar }: any) {
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  activoAEditar: Activo | null;
+};
+
+export default function ModalActivoInversiones({ isOpen, onClose, onSuccess, activoAEditar }: Props) {
   const [ticker, setTicker] = useState('');
   const [nombre, setNombre] = useState('');
   const [categoriaId, setCategoriaId] = useState('');
-  const [categorias, setCategorias] = useState<any[]>([]);
+  const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
-    fetch('/api/ajustes/categorias')
-      .then(r => r.json())
-      .then(data => setCategorias(data.filter((c: any) => c.tipo_operacion_id === 'INVERSION' && c.activo)));
+    ajustesApi.listarCategorias()
+      .then(data => setCategorias(data.filter((c) => c.tipo_operacion_id === 'INVERSION' && c.activo)));
   }, []);
 
   useEffect(() => {
@@ -28,7 +36,7 @@ export default function ModalActivoInversiones({ isOpen, onClose, onSuccess, act
     }
   }, [activoAEditar, isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEnviando(true);
     
@@ -39,14 +47,14 @@ export default function ModalActivoInversiones({ isOpen, onClose, onSuccess, act
     };
 
     try {
-      const url = activoAEditar ? `/api/inversiones/activos/${activoAEditar.ticker}` : '/api/inversiones/activos';
-      const method = activoAEditar ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
-      });
-      if (res.ok) { onSuccess(); onClose(); } else { alert('Error al guardar. Si es un activo nuevo, verifica que el Ticker no exista ya.'); }
-    } catch { alert('Error de red'); } finally { setEnviando(false); }
+      if (activoAEditar) {
+        await inversionesApi.modificarActivo(activoAEditar.ticker, payload);
+      } else {
+        await inversionesApi.crearActivo(payload);
+      }
+      onSuccess();
+      onClose();
+    } catch { alert('Error al guardar. Si es un activo nuevo, verifica que el Ticker no exista ya.'); } finally { setEnviando(false); }
   };
 
   if (!isOpen) return null;

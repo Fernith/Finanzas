@@ -12,15 +12,14 @@ use tower_http::services::{ServeDir, ServeFile};
 use axum::http::HeaderName;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
-    let db_url = std::env::var("DATABASE_URL").expect("Falta DATABASE_URL en el .env");
+    let db_url = std::env::var("DATABASE_URL")?;
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
-        .await
-        .expect("No se pudo conectar a la base de datos");
+        .await?;
 
     let pool_para_cron = pool.clone();
         
@@ -105,8 +104,9 @@ async fn main() {
     
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let addr = format!("0.0.0.0:{}", port);
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
     
     println!("🚀 Servidor Rust corriendo en {}", addr);
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await?;
+    Ok(())
 }

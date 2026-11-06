@@ -1,17 +1,29 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { liquidezApi } from '../api/client';
+import type { CuentaLiquidez } from '../types';
+import { redondearMoneda } from '../utils/formatters';
 
 export function useLiquidez() {
-  const [cuentas, setCuentas] = useState<any[]>([]);
+  const [cuentas, setCuentas] = useState<CuentaLiquidez[]>([]);
 
   const cargarCuentas = useCallback(() => {
-    fetch('/api/liquidez/saldos')
-      .then(res => res.json())
-      .then(data => setCuentas(data));
+    liquidezApi.obtenerSaldos().then(setCuentas).catch(console.error);
   }, []);
 
-  useEffect(() => { cargarCuentas(); }, [cargarCuentas]);
+  useEffect(() => {
+    cargarCuentas();
+  }, [cargarCuentas]);
 
-  const totalCalculado = useMemo(() => cuentas.reduce((acc, c) => acc + c.saldo_calculado, 0), [cuentas]);
+  useEffect(() => {
+    const handler = () => cargarCuentas();
+    window.addEventListener('actualizarTransacciones', handler);
+    return () => window.removeEventListener('actualizarTransacciones', handler);
+  }, [cargarCuentas]);
+
+  const totalCalculado = useMemo(
+    () => redondearMoneda(cuentas.reduce((acc, c) => acc + c.saldo_calculado, 0)),
+    [cuentas]
+  );
 
   return { cuentas, totalCalculado, cargarCuentas };
 }
