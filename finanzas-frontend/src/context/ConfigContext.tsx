@@ -13,9 +13,13 @@ export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    ajustesApi.obtenerConfiguracion()
+    ajustesApi.listarAjustes()
       .then(data => {
-        setUsarPendientes(data.usar_pendientes);
+        const ajustePendientes = data.find(a => a.clave === 'pendientes');
+        const activo = ajustePendientes
+          ? ajustePendientes.valor.trim().toLowerCase() === 'true'
+          : false;
+        setUsarPendientes(activo);
         setCargando(false);
       })
       .catch(() => setCargando(false));

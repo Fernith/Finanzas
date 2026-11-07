@@ -87,8 +87,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/ahorros/opciones-finalizar", axum::routing::get(handlers::ahorros::opciones_finalizar))
         .route("/api/ahorros/metas/:id/finalizar", axum::routing::post(handlers::ahorros::finalizar_meta))
 
-        // CONFIGURACION
-        .route("/api/configuracion", axum::routing::get(handlers::ajustes::obtener_configuracion).put(handlers::ajustes::actualizar_configuracion))
+        // AJUSTES GENERALES
+        .route("/api/ajustes", axum::routing::get(handlers::ajustes::listar_ajustes).put(handlers::ajustes::actualizar_ajuste))
 
         // SUSCRIPCIONES
         .route("/api/suscripciones", axum::routing::get(handlers::suscripciones::listar_suscripciones).post(handlers::suscripciones::crear_suscripcion))

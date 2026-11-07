@@ -7,6 +7,19 @@ use sqlx::PgPool;
 use crate::error::AppError;
 use crate::dtos::operaciones::*;
 
+#[derive(sqlx::FromRow)]
+struct GastoRow {
+    id: String,
+    fecha: String,
+    cantidad: f64,
+    categoria: String,
+    color_categoria: Option<String>,
+    cuenta: String,
+    descripcion: Option<String>,
+    pendiente: bool,
+    total_filas: i64,
+}
+
 pub async fn obtener_gastos(
     State(pool): State<PgPool>,
     Query(filtro): Query<FiltroFecha>,
@@ -15,22 +28,29 @@ pub async fn obtener_gastos(
     let limit = filtro.limit.unwrap_or(2000); 
     let offset = filtro.offset.unwrap_or(0);
 
-    let rows = sqlx::query!(
+    let rows: Vec<GastoRow> = sqlx::query_as(
         r#"
         SELECT 
-            o.id::text as "id!",
-            o.fecha::text as "fecha!", 
-            o.cantidad::float as "cantidad!",
-            c.nombre as "categoria!",
-            c.color as "color_categoria?",
-            cu.nombre as "cuenta!",
-            o.descripcion,
-            COALESCE(o.pendiente, false)::bool as "pendiente!",
-            COUNT(*) OVER() as "total_filas!"
+            o.id::text AS id,
+            o.fecha::text AS fecha, 
+            ROUND(o.cantidad::numeric, 2)::float8 AS cantidad,
+            c.nombre AS categoria,
+            c.color AS color_categoria,
+            cu.nombre AS cuenta,
+            o.descripcion AS descripcion,
+            COALESCE(o.pendiente, false)::bool AS pendiente,
+            COUNT(*) OVER() AS total_filas
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
         JOIN cuentas cu ON o.cuenta_id = cu.id
         WHERE o.tipo_operacion_id = 'GASTO'::tipo_operacion_enum
+          AND (
+              COALESCE(o.pendiente, false) = false
+              OR EXISTS (
+                  SELECT 1 FROM ajustes a
+                  WHERE a.clave = 'pendientes' AND LOWER(TRIM(a.valor)) = 'true'
+              )
+          )
           AND (
               ($3::text != '' AND (
                   o.descripcion ILIKE '%' || $3::text || '%' OR 
@@ -38,13 +58,19 @@ pub async fn obtener_gastos(
                   cu.nombre ILIKE '%' || $3::text || '%'
               ))
               OR 
-              ($3::text = '' AND ($1::float = 0 OR EXTRACT(MONTH FROM o.fecha) = $1::float) AND EXTRACT(YEAR FROM o.fecha) = $2::float)
+              ($3::text = '' AND ($1::float8 = 0 OR EXTRACT(MONTH FROM o.fecha) = $1::float8) AND EXTRACT(YEAR FROM o.fecha) = $2::float8)
           )
         ORDER BY o.fecha DESC
-        LIMIT $4 OFFSET $5
-        "#,
-        filtro.mes as f64, filtro.anio as f64, search_term, limit, offset
-    ).fetch_all(&pool).await?;
+        LIMIT $4::int8 OFFSET $5::int8
+        "#
+    )
+    .bind(filtro.mes as f64)
+    .bind(filtro.anio as f64)
+    .bind(&search_term)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(&pool)
+    .await?;
 
     let total_count = rows.first().map(|r| r.total_filas).unwrap_or(0);
     let gastos: Vec<GastoDTO> = rows.into_iter().map(|r| GastoDTO {

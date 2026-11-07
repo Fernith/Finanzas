@@ -13,8 +13,8 @@ export default function GraficoMediaCategorias({ data, colorBorderTheme }: Props
       <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-6 uppercase tracking-wider">
         Media Mensual por Categoría
       </h3>
-      <div className="w-full h-80">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full min-w-0">
+        <ResponsiveContainer width="100%" height={320}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" className="dark:stroke-neutral-800" />
             <XAxis dataKey="categoria" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#888' }} interval={0} angle={-45} textAnchor="end" height={60} />

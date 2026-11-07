@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { TrendingUp, Search, Filter, X } from 'lucide-react';
+import { useConfig } from '../context/ConfigContext';
 import { useTransacciones } from '../hooks/useTransacciones';
 import { formatearMoneda, redondearMoneda } from '../utils/formatters';
 import type { BarraMediaCategoria, BarraMesOperacion, CategoriaStatOperacion, SankeyData, Transaction } from '../types';
@@ -10,6 +11,7 @@ import VistaMensualOperaciones from '../components/operaciones/VistaMensualOpera
 import VistaAnualOperaciones from '../components/operaciones/VistaAnualOperaciones';
 
 export default function Ingresos() {
+  const { usarPendientes } = useConfig();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [vista, setVista] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
@@ -196,13 +198,15 @@ export default function Ingresos() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${usarPendientes ? 'md:grid-cols-2' : ''} gap-6`}>
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-emerald-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between">
-          <div><p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Ingreso Real Percibido</p><p className="text-4xl font-black text-emerald-600 dark:text-emerald-400">{formatearMoneda(vista === 'MENSUAL' ? realesMes : realesAnual)} €</p></div>
+          <div><p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Ingreso Real Realizado</p><p className="text-4xl font-black text-emerald-600 dark:text-emerald-400">{formatearMoneda(vista === 'MENSUAL' ? realesMes : realesAnual)} €</p></div>
         </div>
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-emerald-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between opacity-80">
-          <div><p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Total (Inc. Pendientes)</p><p className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">{formatearMoneda(vista === 'MENSUAL' ? totalesMes : totalesAnual)} €</p></div>
-        </div>
+        {usarPendientes && (
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-emerald-500/30 rounded-2xl p-6 shadow-sm flex items-center justify-between opacity-80">
+            <div><p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Total (Inc. Pendientes)</p><p className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">{formatearMoneda(vista === 'MENSUAL' ? totalesMes : totalesAnual)} €</p></div>
+          </div>
+        )}
       </div>
 
       {vista === 'MENSUAL' ? (

@@ -46,8 +46,8 @@ export default function GraficoResumen({ titulo, datosGrafico, colorBorderTheme 
       
       {datosGrafico.length > 0 ? (
         <>
-          <div className="h-64 w-full mb-4">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full min-w-0 mb-4 shrink-0">
+            <ResponsiveContainer width="100%" height={256}>
               <PieChart>
                 <Pie 
                   data={datosGrafico} 
@@ -64,7 +64,7 @@ export default function GraficoResumen({ titulo, datosGrafico, colorBorderTheme 
             </ResponsiveContainer>
           </div>
           
-          <div className="space-y-3 flex-grow overflow-y-auto pr-2 max-h-48">
+          <div className="space-y-3 flex-1 pr-1">
             {datosGrafico.map((item) => {
               const textColor = obtenerColorTextoParaFondo(item.fill);
               return (

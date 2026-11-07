@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type {
   Activo,
+  AjusteItem,
   CategoriaItem,
-  Configuracion,
   CuentaItem,
   CuentaLiquidez,
   FinalizarMetaPayload,
@@ -198,11 +198,11 @@ export const ajustesApi = {
   reordenarCuentas: async (payload: ReordenarItem[]): Promise<void> => {
     await apiClient.put('/ajustes/cuentas/reordenar', payload);
   },
-  obtenerConfiguracion: async (): Promise<Configuracion> => {
-    const { data } = await apiClient.get<Configuracion>('/configuracion');
+  listarAjustes: async (): Promise<AjusteItem[]> => {
+    const { data } = await apiClient.get<AjusteItem[]>('/ajustes');
     return data;
   },
-  actualizarConfiguracion: async (payload: Configuracion): Promise<void> => {
-    await apiClient.put('/configuracion', payload);
+  actualizarAjuste: async (payload: AjusteItem): Promise<void> => {
+    await apiClient.put('/ajustes', payload);
   },
 };

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, ChevronDown, ChevronLeft, ChevronRight, Clock, CheckCircle2 } from 'lucide-react';
+import { useConfig } from '../../context/ConfigContext';
 import type { Transaction } from '../../types';
-import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
+import { formatearMoneda, obtenerColorTextoParaFondo, redondearMoneda } from '../../utils/formatters';
 import ModalConfirmacion from '../general/ModalConfirmacion';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export default function TransactionTable({ transacciones, onEdit, onDelete, onTogglePendiente, tipo, colorBorderTheme }: Props) {
+  const { usarPendientes } = useConfig();
   const [sortDesc, setSortDesc] = useState(true);
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,9 +36,14 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
   const totalPages = Math.ceil(transaccionesOrdenadas.length / perPage) || 1;
   const currentItems = transaccionesOrdenadas.slice((currentPage - 1) * perPage, currentPage * perPage);
   
-  const totalFiltrado = transacciones.reduce((acc, t) => acc + t.cantidad, 0);
+  const totalFiltrado = redondearMoneda(
+    transacciones.filter(t => !t.pendiente).reduce((acc, t) => acc + t.cantidad, 0)
+  );
 
   const isIngreso = tipo === 'INGRESO';
+  const totalColumnas = 6 + (isIngreso ? 1 : 0) + (usarPendientes ? 1 : 0);
+  const colsEtiquetaTotal = usarPendientes ? 2 : 1;
+  const colsValorTotal = totalColumnas - colsEtiquetaTotal;
   const headerBg = isIngreso ? 'dark:bg-[#07130f] bg-emerald-50' : 'dark:bg-[#1a0f0f] bg-red-50';
   const colorTextHighlight = isIngreso ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500';
 
@@ -44,21 +51,21 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
     <>
       <div className={`bg-white dark:bg-[#121212] border rounded-2xl shadow-sm overflow-hidden flex flex-col h-full transition-colors ${colorBorderTheme}`}>
         
-        <div className="overflow-x-auto w-full flex-1">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+        <div className="overflow-x-auto lg:overflow-x-hidden w-full flex-1">
+          <table className="w-full text-left border-collapse min-w-[700px] lg:min-w-0">
             
             <thead>
               <tr className={`${headerBg} border-b border-neutral-200 dark:border-neutral-800/80`}>
-                {/* <th className="p-4 w-10 text-center"></th> */}
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 cursor-pointer select-none" onClick={() => setSortDesc(!sortDesc)}>
+                {usarPendientes && <th className="p-4 lg:px-2 lg:py-3.5 w-10 text-center"></th>}
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 cursor-pointer select-none whitespace-nowrap" onClick={() => setSortDesc(!sortDesc)}>
                   <div className="flex items-center gap-1">FECHA <ChevronDown size={14} className={`transition-transform ${!sortDesc && 'rotate-180'}`}/></div>
                 </th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CANTIDAD</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CATEGORÍA</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CUENTA</th>
-                {isIngreso && <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">PAGADOR/ENTIDAD</th>}
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">DESCRIPCIÓN</th>
-                <th className="p-4 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 text-center">ACCIONES</th>
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 whitespace-nowrap">CANTIDAD</th>
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CATEGORÍA</th>
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CUENTA</th>
+                {isIngreso && <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">PAGADOR/ENTIDAD</th>}
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">DESCRIPCIÓN</th>
+                <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 text-center">ACCIONES</th>
               </tr>
             </thead>
             
@@ -67,21 +74,21 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                 const bgCat = t.color_categoria || '#94a3b8';
                 return (
                   <tr key={t.id} className="odd:bg-transparent even:bg-neutral-50 dark:even:bg-[#161616] hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] transition-colors">
-                    {/* 
-                    <td className="p-4 text-center">
-                      {t.pendiente 
-                        ? <button onClick={() => setIdConfirmarActivacion(t.id)} title="Marcar completado" className="text-amber-500 hover:scale-110 transition-transform"><Clock size={16} strokeWidth={3} /></button>
-                        : <span title="Completado"><CheckCircle2 size={16} strokeWidth={3} className="text-emerald-500 mx-auto" /></span>
-                      }
-                    </td>
-                    */}
-                    <td className="p-4 text-sm font-medium text-neutral-700 dark:text-neutral-300">{formatDate(t.fecha)}</td>
-                    <td className="p-4 text-base font-bold text-neutral-900 dark:text-white">{formatearMoneda(t.cantidad)} €</td>
+                    {usarPendientes && (
+                      <td className="p-4 lg:px-2 lg:py-3.5 text-center">
+                        {t.pendiente 
+                          ? <button onClick={() => setIdConfirmarActivacion(t.id)} title="Marcar completado" className="text-amber-500 hover:scale-110 transition-transform"><Clock size={16} strokeWidth={3} /></button>
+                          : <span title="Completado"><CheckCircle2 size={16} strokeWidth={3} className="text-emerald-500 mx-auto" /></span>
+                        }
+                      </td>
+                    )}
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 whitespace-nowrap">{formatDate(t.fecha)}</td>
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-base font-bold text-neutral-900 dark:text-white whitespace-nowrap">{formatearMoneda(t.cantidad)} €</td>
                     
                     {/* APLICADO CONTRASTE AUTOMÁTICO AL RECUADRO DE CATEGORÍA */}
-                    <td className="p-4">
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5">
                       <span 
-                        className="px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm border border-black/10 inline-block truncate max-w-[150px]"
+                        className="px-2.5 py-1 rounded-md text-[11px] font-bold shadow-sm border border-black/10 inline-block truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]"
                         style={{ backgroundColor: bgCat, color: obtenerColorTextoParaFondo(bgCat) }}
                         title={t.categoria}
                       >
@@ -89,10 +96,10 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                       </span>
                     </td>
                     
-                    <td className="p-4 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]">{t.cuenta}</td>
-                    {isIngreso && <td className="p-4 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px]">{t.campo_extra_ingreso || ''}</td>}
-                    <td className="p-4 text-sm text-neutral-500 dark:text-neutral-400 min-w-[200px] max-w-[300px] whitespace-pre-wrap break-words">{t.descripcion || ''}</td>
-                    <td className="p-4 text-center">
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]">{t.cuenta}</td>
+                    {isIngreso && <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]">{t.campo_extra_ingreso || ''}</td>}
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-500 dark:text-neutral-400 min-w-[200px] lg:min-w-0 max-w-[300px] whitespace-pre-wrap break-words">{t.descripcion || ''}</td>
+                    <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-center">
                       <div className="flex items-center justify-center gap-3">
                         <button onClick={() => onEdit(t)} className="text-neutral-400 hover:text-indigo-500 transition-colors" title="Editar"><Pencil size={16} /></button>
                         <button onClick={() => onDelete(t.id)} className="text-neutral-400 hover:text-red-500 transition-colors" title="Eliminar"><Trash2 size={16} /></button>
@@ -102,16 +109,16 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                 );
               })}
               {currentItems.length === 0 && (
-                <tr><td colSpan={7} className="p-8 text-center text-neutral-500 text-sm">No hay resultados.</td></tr>
+                <tr><td colSpan={totalColumnas} className="p-8 text-center text-neutral-500 text-sm">No hay resultados.</td></tr>
               )}
             </tbody>
 
             <tfoot className={`${headerBg} border-t border-neutral-200 dark:border-neutral-800/80`}>
               <tr>
-                <td colSpan={2} className={`p-4 text-xs font-bold uppercase tracking-wider ${colorTextHighlight}`}>
+                <td colSpan={colsEtiquetaTotal} className={`p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider whitespace-nowrap ${colorTextHighlight}`}>
                   TOTAL FILTRADO:
                 </td>
-                <td colSpan={isIngreso ? 6 : 5} className={`p-4 text-base font-black ${colorTextHighlight}`}>
+                <td colSpan={colsValorTotal} className={`p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-base font-black ${colorTextHighlight}`}>
                   {formatearMoneda(totalFiltrado)} €
                 </td>
               </tr>

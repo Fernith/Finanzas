@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, User } from 'lucide-react';
 import { ajustesApi, inversionesApi, operacionesApi } from '../../api/client';
+import { useConfig } from '../../context/ConfigContext';
 import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
 import type { Activo, CategoriaItem, CuentaItem, Transaction } from '../../types';
 
@@ -15,6 +16,7 @@ type ModalProps = {
 };
 
 export default function ModalTransaccion({ isOpen, onClose, onSuccess, transaccionAEditar, tipoInicial = 'GASTO' }: ModalProps) {
+  const { usarPendientes } = useConfig();
   const hoy = obtenerFechaHoyEsp();
   
   const [form, setForm] = useState({
@@ -45,7 +47,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         fecha: transaccionAEditar?.fecha || hoy,
         cantidad: transaccionAEditar ? String(transaccionAEditar.cantidad) : '',
         descripcion: transaccionAEditar?.descripcion || '',
-        pendiente: transaccionAEditar?.pendiente || false,
+        pendiente: usarPendientes ? (transaccionAEditar?.pendiente || false) : false,
         categoria_id: transaccionAEditar?.categoria_id || '',
         cuenta_id: transaccionAEditar?.cuenta_id || '',
         activo_ticker: '',
@@ -81,7 +83,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
       };
       fetchData();
     }
-  }, [isOpen, transaccionAEditar, tipoInicial, hoy]);
+  }, [isOpen, transaccionAEditar, tipoInicial, hoy, usarPendientes]);
 
   if (!isOpen) return null;
 
@@ -138,6 +140,8 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         // Gasto / Ingreso Normal
         if (!form.categoria_id || !form.cuenta_id) { alert('Selecciona una categoría y cuenta.'); setEnviando(false); return; }
 
+        const pendienteFinal = usarPendientes ? form.pendiente : false;
+
         if (form.tipo === 'GASTO') {
           const payload = {
             fecha: form.fecha,
@@ -145,7 +149,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
             categoria_id: form.categoria_id,
             cuenta_id: form.cuenta_id,
             descripcion: form.descripcion.trim() || null,
-            pendiente: form.pendiente,
+            pendiente: pendienteFinal,
           };
           if (transaccionAEditar) {
             await operacionesApi.actualizarGasto(transaccionAEditar.id, payload);
@@ -159,7 +163,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
             categoria_id: form.categoria_id,
             cuenta_id: form.cuenta_id,
             descripcion: form.descripcion.trim() || null,
-            pendiente: form.pendiente,
+            pendiente: pendienteFinal,
             campo_extra_ingreso: form.campo_extra_ingreso.trim() || null,
           };
           if (transaccionAEditar) {
@@ -269,16 +273,18 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
                 <textarea rows={2} placeholder="Detalle de la operación..." value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})} className={`${inputClases} resize-none`} />
               </div>
 
-              <div className="flex items-center justify-between p-3 bg-slate-100/50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl mt-2">
-                <div className="flex flex-col">
-                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Operación Pendiente</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Aún no reflejada en el banco</span>
+              {usarPendientes && (
+                <div className="flex items-center justify-between p-3 bg-slate-100/50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl mt-2">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Operación Pendiente</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Aún no reflejada en el banco</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" checked={form.pendiente} onChange={e => setForm({...form, pendiente: e.target.checked})}/>
+                    <div className={`w-11 h-6 bg-slate-300 dark:bg-zinc-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${tema.toggle}`}></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" checked={form.pendiente} onChange={e => setForm({...form, pendiente: e.target.checked})}/>
-                  <div className={`w-11 h-6 bg-slate-300 dark:bg-zinc-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${tema.toggle}`}></div>
-                </label>
-              </div>
+              )}
             </>
           )}
 

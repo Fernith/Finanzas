@@ -7,7 +7,7 @@ use sqlx::{PgPool, Row};
 use crate::error::AppError;
 use crate::dtos::ajustes::*;
 
-// CATEGORIAS
+// --- CATEGORIAS ---
 pub async fn listar_categorias(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         CategoriaItemDTO, 
@@ -54,7 +54,20 @@ pub async fn reactivar_categoria(State(pool): State<PgPool>, Path(id): Path<Stri
     Ok((StatusCode::OK, "OK"))
 }
 
-// CUENTAS
+pub async fn reordenar_categorias(State(pool): State<PgPool>, Json(payload): Json<Vec<ReordenarDTO>>) -> Result<impl IntoResponse, AppError> {
+    let mut tx = pool.begin().await?;
+    for item in payload {
+        sqlx::query("UPDATE categorias SET orden = $1 WHERE id = $2::uuid")
+            .bind(item.orden)
+            .bind(&item.id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    Ok((StatusCode::OK, "OK"))
+}
+
+// --- CUENTAS ---
 pub async fn listar_cuentas(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(
         CuentaItemDTO,
@@ -111,46 +124,31 @@ pub async fn eliminar_cuenta_logico(State(pool): State<PgPool>, Path(id): Path<S
     sqlx::query("UPDATE cuentas SET activo = false WHERE id = $1::uuid").bind(&id).execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
+
 pub async fn reactivar_cuenta(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
     sqlx::query("UPDATE cuentas SET activo = true WHERE id = $1::uuid").bind(&id).execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
 
-pub async fn obtener_configuracion(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
-    let row = sqlx::query!("SELECT usar_pendientes FROM configuracion WHERE id = 1").fetch_one(&pool).await;
-    match row { 
-        Ok(r) => Ok(Json(ConfiguracionDTO { 
-            // Desempaquetamos el Option<bool>. Si es None (NULL), usamos false por defecto.
-            usar_pendientes: r.usar_pendientes.unwrap_or(false) 
-        })), 
-        Err(_) => Ok(Json(ConfiguracionDTO { usar_pendientes: false })) 
-    }
-}
-
-pub async fn actualizar_configuracion(State(pool): State<PgPool>, Json(payload): Json<ConfiguracionDTO>) -> Result<impl IntoResponse, AppError> {
-    sqlx::query!("UPDATE configuracion SET usar_pendientes = $1 WHERE id = 1", payload.usar_pendientes).execute(&pool).await?;
-    Ok((StatusCode::OK, "OK"))
-}
-
-pub async fn reordenar_categorias(State(pool): State<PgPool>, Json(payload): Json<Vec<ReordenarDTO>>) -> Result<impl IntoResponse, AppError> {
-    let mut tx = pool.begin().await?;
-    for item in payload { sqlx::query("UPDATE categorias SET orden = $1 WHERE id = $2::uuid").bind(item.orden).bind(&item.id).execute(&mut *tx).await?; }
-    tx.commit().await?;
-    Ok((StatusCode::OK, "OK"))
-}
-
 pub async fn reordenar_cuentas(State(pool): State<PgPool>, Json(payload): Json<Vec<ReordenarDTO>>) -> Result<impl IntoResponse, AppError> {
     let mut tx = pool.begin().await?;
-    for item in payload { sqlx::query("UPDATE cuentas SET orden = $1 WHERE id = $2::uuid").bind(item.orden).bind(&item.id).execute(&mut *tx).await?; }
+    for item in payload {
+        sqlx::query("UPDATE cuentas SET orden = $1 WHERE id = $2::uuid")
+            .bind(item.orden)
+            .bind(&item.id)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
     Ok((StatusCode::OK, "OK"))
 }
 
-// GRUPOS
+// --- GRUPOS ---
 pub async fn listar_grupos(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     let rows = sqlx::query_as!(GrupoDTO, r#"SELECT id::text as "id!", nombre as "nombre!", color, activo as "activo!", orden as "orden!" FROM grupos ORDER BY orden ASC, nombre ASC"#).fetch_all(&pool).await?;
     Ok(Json(rows))
 }
+
 pub async fn crear_grupo(State(pool): State<PgPool>, Json(payload): Json<UpsertGrupoDTO>) -> Result<impl IntoResponse, AppError> {
     let max_orden_opt: Option<i32> = sqlx::query_scalar("SELECT MAX(orden) FROM grupos").fetch_one(&pool).await?;
     let max_orden = max_orden_opt.unwrap_or(0);
@@ -158,21 +156,54 @@ pub async fn crear_grupo(State(pool): State<PgPool>, Json(payload): Json<UpsertG
         .bind(&payload.nombre).bind(&payload.color).bind(payload.orden.unwrap_or(max_orden + 1)).execute(&pool).await?;
     Ok((StatusCode::CREATED, "OK"))
 }
+
 pub async fn modificar_grupo(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertGrupoDTO>) -> Result<impl IntoResponse, AppError> {
     sqlx::query("UPDATE grupos SET nombre = $1, color = $2 WHERE id = $3::uuid").bind(&payload.nombre).bind(&payload.color).bind(&id).execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
+
 pub async fn eliminar_grupo_logico(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
     sqlx::query("UPDATE grupos SET activo = false WHERE id = $1::uuid").bind(&id).execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
+
 pub async fn reactivar_grupo(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
     sqlx::query("UPDATE grupos SET activo = true WHERE id = $1::uuid").bind(&id).execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
+
 pub async fn reordenar_grupos(State(pool): State<PgPool>, Json(payload): Json<Vec<ReordenarDTO>>) -> Result<impl IntoResponse, AppError> {
     let mut tx = pool.begin().await?;
-    for item in payload { sqlx::query("UPDATE grupos SET orden = $1 WHERE id = $2::uuid").bind(item.orden).bind(&item.id).execute(&mut *tx).await?; }
+    for item in payload {
+        sqlx::query("UPDATE grupos SET orden = $1 WHERE id = $2::uuid")
+            .bind(item.orden)
+            .bind(&item.id)
+            .execute(&mut *tx)
+            .await?;
+    }
     tx.commit().await?;
+    Ok((StatusCode::OK, "OK"))
+}
+
+// --- AJUSTES ---
+pub async fn listar_ajustes(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
+    let rows: Vec<AjusteDTO> = sqlx::query_as(
+        "SELECT clave, valor FROM ajustes ORDER BY clave ASC"
+    )
+    .fetch_all(&pool)
+    .await?;
+
+    Ok(Json(rows))
+}
+
+pub async fn actualizar_ajuste(State(pool): State<PgPool>, Json(payload): Json<AjusteDTO>) -> Result<impl IntoResponse, AppError> {
+    sqlx::query(
+        "INSERT INTO ajustes (clave, valor) VALUES ($1, $2) ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor"
+    )
+    .bind(&payload.clave)
+    .bind(&payload.valor)
+    .execute(&pool)
+    .await?;
+
     Ok((StatusCode::OK, "OK"))
 }

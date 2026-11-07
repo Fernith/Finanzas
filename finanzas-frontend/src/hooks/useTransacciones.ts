@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { operacionesApi } from '../api/client';
+import { useConfig } from '../context/ConfigContext';
 import type { Transaction } from '../types';
 
 export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year: number) {
+  const { usarPendientes } = useConfig();
   const [transaccionesAnuales, setTransaccionesAnuales] = useState<Transaction[]>([]);
   const [transacciones, setTransacciones] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +14,8 @@ export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year:
     ultimoTerminoBusqueda.current = searchTerm;
     setLoading(true);
     try {
-      const data = await operacionesApi.listar(tipo, 0, year, searchTerm);
+      const rawData = await operacionesApi.listar(tipo, 0, year, searchTerm);
+      const data = usarPendientes ? rawData : rawData.filter((t: Transaction) => !t.pendiente);
       setTransaccionesAnuales(data);
 
       if (searchTerm) {
@@ -25,7 +28,7 @@ export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year:
     } finally {
       setLoading(false);
     }
-  }, [tipo, month, year]);
+  }, [tipo, month, year, usarPendientes]);
 
   useEffect(() => {
     fetchTransacciones(ultimoTerminoBusqueda.current);
@@ -42,7 +45,8 @@ export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year:
   const togglePendiente = async (id: string, searchTerm = '') => {
     try {
       await operacionesApi.completar(tipo, id);
-      fetchTransacciones(searchTerm);
+      ultimoTerminoBusqueda.current = searchTerm;
+      window.dispatchEvent(new Event('actualizarTransacciones'));
     } catch (e: unknown) {
       const detalle = e instanceof Error ? e.message : 'Error desconocido';
       console.error('Error al activar operación:', e);
@@ -53,7 +57,8 @@ export function useTransacciones(tipo: 'GASTO' | 'INGRESO', month: number, year:
   const eliminarTransaccion = async (id: string, searchTerm = '') => {
     try {
       await operacionesApi.eliminar(tipo, id);
-      fetchTransacciones(searchTerm);
+      ultimoTerminoBusqueda.current = searchTerm;
+      window.dispatchEvent(new Event('actualizarTransacciones'));
     } catch (e: unknown) {
       const detalle = e instanceof Error ? e.message : 'Error desconocido';
       console.error('Error al eliminar:', e);

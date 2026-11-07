@@ -124,8 +124,9 @@ export interface UpsertCuentaPayload {
 
 export type CatalogoItem = CategoriaItem | CuentaItem;
 
-export interface Configuracion {
-  usar_pendientes: boolean;
+export interface AjusteItem {
+  clave: string;
+  valor: string;
 }
 
 export interface ReordenarItem {

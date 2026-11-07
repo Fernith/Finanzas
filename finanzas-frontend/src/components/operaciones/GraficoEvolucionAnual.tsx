@@ -17,8 +17,8 @@ export default function GraficoEvolucionAnual({ data, categorias, tipo, colorBor
       <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-6 uppercase tracking-wider">
         Evolución de {nombreOperacion} Anuales
       </h3>
-      <div className="w-full h-72">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="w-full min-w-0">
+        <ResponsiveContainer width="100%" height={288}>
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" className="dark:stroke-neutral-800" />
             <XAxis dataKey="mes" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} />

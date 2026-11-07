@@ -12,9 +12,13 @@ export default function TogglePendientes() {
     const nuevoEstado = !usarPendientes;
     setUsarPendientes(nuevoEstado); 
     try {
-      await ajustesApi.actualizarConfiguracion({ usar_pendientes: nuevoEstado });
+      await ajustesApi.actualizarAjuste({
+        clave: 'pendientes',
+        valor: nuevoEstado ? 'true' : 'false',
+      });
+      window.dispatchEvent(new Event('actualizarTransacciones'));
     } catch {
-      alert('Error de conexión al guardar la configuración');
+      alert('Error de conexión al guardar el ajuste');
       setUsarPendientes(!nuevoEstado); 
     } finally { 
       setModalPendientesAbierto(false); 
@@ -44,8 +48,8 @@ export default function TogglePendientes() {
         onConfirm={confirmarTogglePendientes}
         titulo={usarPendientes ? "Desactivar Operaciones Pendientes" : "Activar Operaciones Pendientes"}
         mensaje={usarPendientes 
-          ? "¿Estás seguro de que deseas desactivar la gestión de operaciones pendientes? Dejarán de mostrarse las operaciones como pendientes en los listados y las sumas se calcularán sobre el total de registros."
-          : "¿Estás seguro de que deseas activar la gestión de operaciones pendientes? Podrás registrar movimientos que aún no se han reflejado en el banco."
+          ? "¿Estás seguro de que deseas desactivar la gestión de operaciones pendientes? Las operaciones pendientes dejarán de mostrarse en los listados y solo se contabilizarán las operaciones reales completadas."
+          : "¿Estás seguro de que deseas activar la gestión de operaciones pendientes? Podrás registrar movimientos aún no reflejados en tu banco y completarlos cuando se hagan efectivos."
         }
         textoBoton={usarPendientes ? "Desactivar" : "Activar"}
         variante={usarPendientes ? 'danger' : 'success'}
