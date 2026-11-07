@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
 import { Menu, X, Sun, Moon, Settings, Wallet, TrendingDown, TrendingUp, LineChart, Target, Repeat } from 'lucide-react';
+import { useConfig } from '../../context/ConfigContext';
 
 export default function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-    setIsDarkMode(true);
-  }, []);
+  const { temaActual, alternarTemaTemporal } = useConfig();
+  const isDarkMode = temaActual === 'oscuro';
 
   const toggleTheme = () => {
-    document.documentElement.classList.toggle('dark');
-    setIsDarkMode(!isDarkMode);
+    alternarTemaTemporal();
   };
 
   const navLinks = [

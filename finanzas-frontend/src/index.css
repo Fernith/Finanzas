@@ -1,9 +1,61 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* 2. Forzamos a que toda la aplicación use esta fuente por defecto */
+/* Fuentes exclusivas para caracteres numericos y monetarios (0-9, +, -, ,, ., %, €) mediante unicode-range */
+@font-face {
+  font-family: 'Num-JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+002B, U+002D, U+002C, U+002E, U+0025, U+20AC;
+}
+
+@font-face {
+  font-family: 'Num-Space Grotesk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+002B, U+002D, U+002C, U+002E, U+0025, U+20AC;
+}
+
+@font-face {
+  font-family: 'Num-Roboto Mono';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/roboto-mono/files/roboto-mono-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+002B, U+002D, U+002C, U+002E, U+0025, U+20AC;
+}
+
+@font-face {
+  font-family: 'Num-Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+002B, U+002D, U+002C, U+002E, U+0025, U+20AC;
+}
+
+@font-face {
+  font-family: 'Num-Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/npm/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2');
+  unicode-range: U+0030-0039, U+002B, U+002D, U+002C, U+002E, U+0025, U+20AC;
+}
+
+:root {
+  --font-app: 'Inter';
+  --font-numbers: 'Inter';
+}
+
+/* 2. Forzamos a que toda la aplicación use las fuentes configuradas por defecto */
 @layer base {
-  html, body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  html, body, button, input, select, textarea {
+    font-family: var(--font-numbers), var(--font-app), system-ui, -apple-system, sans-serif;
+    font-variant-numeric: tabular-nums;
   }
 }

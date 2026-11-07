@@ -3,6 +3,8 @@ import { Settings } from 'lucide-react';
 import ModalAjusteMaestro from '../components/ajustes/ModalAjusteMaestro';
 import ModalConfirmacion from '../components/general/ModalConfirmacion';
 import TogglePendientes from '../components/ajustes/TogglePendientes';
+import AjustesApariencia from '../components/ajustes/AjustesApariencia';
+import AjustesTipoAplicacion from '../components/ajustes/AjustesTipoAplicacion';
 import CatalogoMaestro from '../components/ajustes/CatalogoMaestro';
 import ModalAlerta from '../components/general/ModalAlerta';
 import { useAjustes } from '../hooks/useAjustes';
@@ -73,7 +75,12 @@ export default function Ajustes() {
         </div>
       </div>
 
-      <TogglePendientes />
+      <AjustesApariencia />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <AjustesTipoAplicacion />
+        <TogglePendientes />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <CatalogoMaestro 

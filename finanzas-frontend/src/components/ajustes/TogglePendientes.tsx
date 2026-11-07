@@ -27,7 +27,7 @@ export default function TogglePendientes() {
 
   return (
     <>
-      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 h-full">
         <div>
           <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Clock size={20} className="text-amber-500"/> Gestión de Operaciones Pendientes
