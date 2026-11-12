@@ -1,10 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ajustesApi } from '../api/client';
-import type { CategoriaItem, CuentaItem } from '../types';
+import type { CategoriaItem, CuentaItem, GrupoItem } from '../types';
 
 export function useAjustes() {
+  const [grupos, setGrupos] = useState<GrupoItem[]>([]);
   const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
   const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
+
+  const cargarGrupos = useCallback(() => {
+    ajustesApi.listarGrupos().then(setGrupos).catch(console.error);
+  }, []);
 
   const cargarCategorias = useCallback(() => {
     ajustesApi.listarCategorias().then(setCategorias).catch(console.error);
@@ -15,13 +20,18 @@ export function useAjustes() {
   }, []);
 
   useEffect(() => {
+    cargarGrupos();
     cargarCategorias();
     cargarCuentas();
-  }, [cargarCategorias, cargarCuentas]);
+  }, [cargarGrupos, cargarCategorias, cargarCuentas]);
 
-  const ejecutarAccionEstado = async (target: 'categorias' | 'cuentas', id: string, tipo: 'activar' | 'desactivar') => {
+  const ejecutarAccionEstado = async (target: 'grupos' | 'categorias' | 'cuentas', id: string, tipo: 'activar' | 'desactivar') => {
     try {
-      if (target === 'categorias') {
+      if (target === 'grupos') {
+        if (tipo === 'desactivar') await ajustesApi.desactivarGrupo(id);
+        else await ajustesApi.activarGrupo(id);
+        cargarGrupos();
+      } else if (target === 'categorias') {
         if (tipo === 'desactivar') await ajustesApi.desactivarCategoria(id);
         else await ajustesApi.activarCategoria(id);
         cargarCategorias();
@@ -36,5 +46,5 @@ export function useAjustes() {
     }
   };
 
-  return { categorias, setCategorias, cuentas, setCuentas, cargarCategorias, cargarCuentas, ejecutarAccionEstado };
+  return { grupos, setGrupos, cargarGrupos, categorias, setCategorias, cuentas, setCuentas, cargarCategorias, cargarCuentas, ejecutarAccionEstado };
 }

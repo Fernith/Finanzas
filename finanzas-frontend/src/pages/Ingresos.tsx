@@ -11,7 +11,7 @@ import VistaMensualOperaciones from '../components/operaciones/VistaMensualOpera
 import VistaAnualOperaciones from '../components/operaciones/VistaAnualOperaciones';
 
 export default function Ingresos() {
-  const { usarPendientes } = useConfig();
+  const { usarPendientes, perfil } = useConfig();
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [vista, setVista] = useState<'MENSUAL' | 'ANUAL'>('MENSUAL');
@@ -78,9 +78,10 @@ export default function Ingresos() {
   const totalesAnual = redondearMoneda(tAnualesFiltradas.reduce((a, b) => a + b.cantidad, 0));
 
   const categoriasStats = useMemo<CategoriaStatOperacion[]>(() => {
-    const agrupado: Record<string, { nombre: string, color: string, totalAnual: number, totalMes: number }> = {};
+    const agrupado: Record<string, { nombre: string, color: string, orden: number, totalAnual: number, totalMes: number }> = {};
     tAnualesFiltradas.filter(t => !t.pendiente).forEach(t => {
-      if (!agrupado[t.categoria]) { agrupado[t.categoria] = { nombre: t.categoria, color: t.color_categoria || '#10b981', totalAnual: 0, totalMes: 0 }; }
+      const colorCat = perfil === 'Tipo A' ? (t.color_grupo || '#3b82f6') : (t.color_categoria || '#10b981');
+      if (!agrupado[t.categoria]) { agrupado[t.categoria] = { nombre: t.categoria, color: colorCat, orden: t.orden_categoria ?? 0, totalAnual: 0, totalMes: 0 }; }
       agrupado[t.categoria].totalAnual = redondearMoneda(agrupado[t.categoria].totalAnual + t.cantidad);
     });
     tMensualesFiltradas.filter(t => !t.pendiente).forEach(t => {
@@ -91,7 +92,7 @@ export default function Ingresos() {
       const evolucion = media > 0 ? ((c.totalMes - media) / media) * 100 : 0;
       return { ...c, media, evolucion };
     }).sort((a, b) => b.totalMes - a.totalMes);
-  }, [tAnualesFiltradas, tMensualesFiltradas, divisorMedia]);
+  }, [tAnualesFiltradas, tMensualesFiltradas, divisorMedia, perfil]);
 
   const sankeyMes = useMemo<SankeyData | null>(() => {
     const cats = categoriasStats.filter(c => c.totalMes > 0);
@@ -227,7 +228,7 @@ export default function Ingresos() {
           sankeyAnual={sankeyAnual} 
           year={year} 
           tipo="INGRESO"
-          categorias={categoriasStats.map(c => ({ nombre: c.nombre, color: c.color }))} 
+          categorias={categoriasStats.map(c => ({ nombre: c.nombre, color: c.color, orden: c.orden }))} 
         />
       )}
 

@@ -6,7 +6,7 @@ pub struct FiltroAnio {
     pub anio: i32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, sqlx::FromRow)]
 #[serde(rename_all = "snake_case")]
 pub struct OperacionAnualDTO {
     pub fecha: String,
@@ -14,4 +14,6 @@ pub struct OperacionAnualDTO {
     pub tipo_operacion_id: String,
     pub categoria: String,
     pub color_categoria: Option<String>, // AÑADIMOS EL COLOR
+    pub color_grupo: Option<String>,
+    pub orden_categoria: i32,
 }

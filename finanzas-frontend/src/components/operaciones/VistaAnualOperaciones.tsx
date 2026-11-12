@@ -9,7 +9,7 @@ type Props = {
   sankeyAnual: SankeyData | null; 
   year: number; 
   tipo: 'GASTO' | 'INGRESO';
-  categorias: { nombre: string; color: string }[];
+  categorias: { nombre: string; color: string; orden?: number }[];
 };
 
 export default function VistaAnualOperaciones({ barrasMesAMes, barrasMediaCategorias, sankeyAnual, year, tipo, categorias }: Props) {

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ajustesApi } from '../api/client';
 
 export type TemaApp = 'oscuro' | 'claro';
-export type TipoAplicacion = 'Tipo A' | 'Tipo B';
+export type PerfilApp = 'Tipo A' | 'Tipo B';
 
 type ConfigContextType = {
   usarPendientes: boolean;
@@ -11,8 +11,8 @@ type ConfigContextType = {
   fuenteNumeros: string;
   temaDefecto: TemaApp;
   temaActual: TemaApp;
-  tipoAplicacion: TipoAplicacion;
-  setTipoAplicacion: (val: TipoAplicacion) => void;
+  perfil: PerfilApp;
+  setPerfil: (val: PerfilApp) => void;
   aplicarApariencia: (texto: string, numeros: string, tema: TemaApp) => void;
   alternarTemaTemporal: () => void;
 };
@@ -24,17 +24,29 @@ const ConfigContext = createContext<ConfigContextType>({
   fuenteNumeros: 'igual',
   temaDefecto: 'oscuro',
   temaActual: 'oscuro',
-  tipoAplicacion: 'Tipo A',
-  setTipoAplicacion: () => {},
+  perfil: 'Tipo A',
+  setPerfil: () => {},
   aplicarApariencia: () => {},
   alternarTemaTemporal: () => {},
 });
 
 const aplicarFuentesDOM = (texto: string, numeros: string) => {
-  const valorTexto = texto === 'system-ui' ? 'system-ui' : `'${texto}'`;
+  const valorTexto =
+    texto === 'system-ui'
+      ? 'system-ui'
+      : texto === 'Alicia'
+        ? "'Playfair Display', 'Nunito Sans'"
+        : `'${texto}'`;
   const valorNumeros = numeros === 'igual' ? valorTexto : `'Num-${numeros}'`;
+  const usaAliciaNumeros =
+    numeros === 'Alicia' || (numeros === 'igual' && texto === 'Alicia');
+
   document.documentElement.style.setProperty('--font-app', valorTexto);
   document.documentElement.style.setProperty('--font-numbers', valorNumeros);
+  document.documentElement.style.setProperty(
+    '--font-numeric-variant',
+    usaAliciaNumeros ? 'normal' : 'tabular-nums',
+  );
 };
 
 const aplicarTemaDOM = (tema: TemaApp) => {
@@ -47,7 +59,7 @@ export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
   const [fuenteNumeros, setFuenteNumeros] = useState<string>('igual');
   const [temaDefecto, setTemaDefecto] = useState<TemaApp>('oscuro');
   const [temaActual, setTemaActual] = useState<TemaApp>('oscuro');
-  const [tipoAplicacion, setTipoAplicacion] = useState<TipoAplicacion>('Tipo A');
+  const [perfil, setPerfil] = useState<PerfilApp>('Tipo A');
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -64,15 +76,15 @@ export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
         const valTema = mapa.get('tema_defecto')?.toLowerCase();
         const temaInicial: TemaApp = valTema === 'claro' ? 'claro' : 'oscuro';
 
-        const valTipoApp = mapa.get('tipo_aplicacion');
-        const tipoAppInicial: TipoAplicacion = valTipoApp === 'Tipo B' ? 'Tipo B' : 'Tipo A';
+        const valPerfil = mapa.get('perfil');
+        const perfilInicial: PerfilApp = valPerfil === 'Tipo B' ? 'Tipo B' : 'Tipo A';
 
         setUsarPendientes(activoPendientes);
         setFuenteTexto(valFuenteTexto);
         setFuenteNumeros(valFuenteNumeros);
         setTemaDefecto(temaInicial);
         setTemaActual(temaInicial);
-        setTipoAplicacion(tipoAppInicial);
+        setPerfil(perfilInicial);
 
         aplicarFuentesDOM(valFuenteTexto, valFuenteNumeros);
         aplicarTemaDOM(temaInicial);
@@ -111,8 +123,8 @@ export const ConfigProvider = ({ children }: { children: React.ReactNode }) => {
         fuenteNumeros,
         temaDefecto,
         temaActual,
-        tipoAplicacion,
-        setTipoAplicacion,
+        perfil,
+        setPerfil,
         aplicarApariencia,
         alternarTemaTemporal,
       }}

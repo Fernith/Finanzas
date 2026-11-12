@@ -84,16 +84,19 @@ const CustomLegend = ({ payload }: CustomLegendProps) => {
 interface GraficoBalanceApiladoProps {
   resumenMensual: ResumenMesBalance[];
   coloresCategorias: Record<string, string>;
+  ordenCategorias?: Record<string, number>;
   dataKeyPrefix: 'categoriasGastos' | 'categoriasIngresos';
 }
 
-export default function GraficoBalanceApilado({ resumenMensual, coloresCategorias, dataKeyPrefix }: GraficoBalanceApiladoProps) {
+export default function GraficoBalanceApilado({ resumenMensual, coloresCategorias, ordenCategorias, dataKeyPrefix }: GraficoBalanceApiladoProps) {
   const categoriasUnicas = new Set<string>();
   resumenMensual.forEach((mes) => {
     Object.keys(mes[dataKeyPrefix] || {}).forEach(cat => categoriasUnicas.add(cat));
   });
   
-  const categorias = Array.from(categoriasUnicas);
+  const categorias = Array.from(categoriasUnicas).sort(
+    (a, b) => (ordenCategorias?.[a] ?? 0) - (ordenCategorias?.[b] ?? 0)
+  );
 
   const dataAplanada = resumenMensual.map((mes) => {
     const aplanado: Record<string, string | number> = { mes: mes.mes };

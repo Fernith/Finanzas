@@ -6,6 +6,7 @@ import type { TemaApp } from '../../context/ConfigContext';
 
 const OPCIONES_FUENTE_TEXTO = [
   { valor: 'Inter', etiqueta: 'Inter (Por defecto)' },
+  { valor: 'Alicia', etiqueta: 'Alicia' },
   { valor: 'Plus Jakarta Sans', etiqueta: 'Plus Jakarta Sans' },
   { valor: 'Outfit', etiqueta: 'Outfit' },
   { valor: 'Roboto', etiqueta: 'Roboto' },
@@ -17,6 +18,7 @@ const OPCIONES_FUENTE_TEXTO = [
 
 const OPCIONES_FUENTE_NUMEROS = [
   { valor: 'igual', etiqueta: 'Igual que el texto' },
+  { valor: 'Alicia', etiqueta: 'Alicia' },
   { valor: 'JetBrains Mono', etiqueta: 'JetBrains Mono' },
   { valor: 'Space Grotesk', etiqueta: 'Space Grotesk' },
   { valor: 'Roboto Mono', etiqueta: 'Roboto Mono' },

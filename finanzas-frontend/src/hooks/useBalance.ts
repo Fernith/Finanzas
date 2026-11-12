@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { balanceApi, operacionesApi } from '../api/client';
+import { useConfig } from '../context/ConfigContext';
 import type { FilaCategoriaBalance, OperacionAnual, ResumenMesBalance } from '../types';
 import { redondearMoneda } from '../utils/formatters';
 
 export function useBalance() {
+  const { perfil } = useConfig();
   const fechaActualObj = new Date();
   const anioActualReal = fechaActualObj.getFullYear();
 
@@ -70,6 +72,7 @@ export function useBalance() {
     totalGastosAnual,
     totalIngresosAnual,
     coloresCategorias,
+    ordenCategorias,
   } = useMemo(() => {
     const resumen: ResumenMesBalance[] = Array.from({ length: 12 }, (_, i) => ({
       mes: mesesNombres[i],
@@ -83,13 +86,15 @@ export function useBalance() {
     const gastosPorCat: Record<string, number[]> = {};
     const ingresosPorCat: Record<string, number[]> = {};
     const colores: Record<string, string> = {};
+    const ordenes: Record<string, number> = {};
     let totalGastos = 0;
     let totalIngresos = 0;
 
     operaciones.forEach(op => {
       const mesIdx = parseInt(op.fecha.split('-')[1], 10) - 1;
       const cantidadNum = redondearMoneda(Number(op.cantidad));
-      colores[op.categoria] = op.color_categoria || '#94a3b8';
+      colores[op.categoria] = perfil === 'Tipo A' ? (op.color_grupo || '#3b82f6') : (op.color_categoria || '#94a3b8');
+      ordenes[op.categoria] = op.orden_categoria ?? 0;
 
       if (op.tipo_operacion_id === 'INGRESO') {
         resumen[mesIdx].ingresos = redondearMoneda(resumen[mesIdx].ingresos + cantidadNum);
@@ -136,8 +141,9 @@ export function useBalance() {
       totalGastosAnual: totalGastos,
       totalIngresosAnual: totalIngresos,
       coloresCategorias: colores,
+      ordenCategorias: ordenes,
     };
-  }, [operaciones, anioSeleccionado, anioActualReal]);
+  }, [operaciones, anioSeleccionado, anioActualReal, perfil]);
 
   const flujoNetoActual = redondearMoneda(totalIngresosAnual - totalGastosAnual);
   const flujoNetoAnterior = useMemo(() => {
@@ -161,6 +167,7 @@ export function useBalance() {
     totalGastosAnual,
     totalIngresosAnual,
     coloresCategorias,
+    ordenCategorias,
     flujoNetoActual,
     flujoNetoAnterior,
     mesActualStats,

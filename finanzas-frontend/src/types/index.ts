@@ -21,6 +21,8 @@ export interface Transaction {
   cantidad: number;
   categoria: string;
   color_categoria?: string | null;
+  color_grupo?: string | null;
+  orden_categoria?: number;
   campo_extra_ingreso?: string | null;
   cuenta: string;
   descripcion?: string | null;
@@ -49,6 +51,7 @@ export interface NuevoIngresoPayload extends NuevoGastoPayload {
 export interface CategoriaStatOperacion {
   nombre: string;
   color: string;
+  orden?: number;
   totalAnual: number;
   totalMes: number;
   media: number;
@@ -90,11 +93,20 @@ export interface GrupoItem {
   orden: number;
 }
 
+export interface UpsertGrupoPayload {
+  nombre: string;
+  color?: string | null;
+  orden?: number;
+}
+
 export interface CategoriaItem {
   id: string;
   nombre: string;
   tipo_operacion_id: string;
+  grupo_id?: string | null;
+  grupo_nombre?: string | null;
   color?: string | null;
+  color_grupo?: string | null;
   activo: boolean;
   orden: number;
 }
@@ -102,6 +114,7 @@ export interface CategoriaItem {
 export interface UpsertCategoriaPayload {
   nombre: string;
   tipo_operacion_id: string;
+  grupo_id?: string | null;
   orden?: number;
   color?: string | null;
 }
@@ -122,7 +135,7 @@ export interface UpsertCuentaPayload {
   tipos_operacion: string[];
 }
 
-export type CatalogoItem = CategoriaItem | CuentaItem;
+export type CatalogoItem = GrupoItem | CategoriaItem | CuentaItem;
 
 export interface AjusteItem {
   clave: string;
@@ -143,6 +156,8 @@ export interface OperacionAnual {
   tipo_operacion_id: string;
   categoria: string;
   color_categoria?: string | null;
+  color_grupo?: string | null;
+  orden_categoria?: number;
 }
 
 export interface ResumenMesBalance {
@@ -172,6 +187,7 @@ export interface Activo {
   categoria_id?: string | null;
   categoria_nombre?: string | null;
   color?: string | null;
+  color_grupo?: string | null;
 }
 
 export interface UpsertActivoPayload {

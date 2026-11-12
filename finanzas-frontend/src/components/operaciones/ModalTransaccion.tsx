@@ -16,7 +16,7 @@ type ModalProps = {
 };
 
 export default function ModalTransaccion({ isOpen, onClose, onSuccess, transaccionAEditar, tipoInicial = 'GASTO' }: ModalProps) {
-  const { usarPendientes } = useConfig();
+  const { usarPendientes, perfil } = useConfig();
   const hoy = obtenerFechaHoyEsp();
   
   const [form, setForm] = useState({
@@ -256,7 +256,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
             </select>
           </div>
 
-          {form.tipo === 'INGRESO' && (
+          {form.tipo === 'INGRESO' && perfil === 'Tipo B' && (
             <>
             <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><User size={16} className="text-slate-400"/> Pagador / Entidad</label>

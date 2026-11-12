@@ -28,6 +28,8 @@ pub struct GastoDTO {
     pub cantidad: f64, 
     pub categoria: String, 
     pub color_categoria: Option<String>, 
+    pub color_grupo: Option<String>,
+    pub orden_categoria: i32,
     pub cuenta: String, 
     pub descripcion: Option<String>, 
     pub pendiente: bool 
@@ -53,6 +55,8 @@ pub struct IngresoDTO {
     pub cantidad: f64, 
     pub categoria: String, 
     pub color_categoria: Option<String>, 
+    pub color_grupo: Option<String>,
+    pub orden_categoria: i32,
     pub cuenta: String, 
     pub descripcion: Option<String>,
     pub pendiente: bool,

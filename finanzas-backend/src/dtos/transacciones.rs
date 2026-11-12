@@ -9,6 +9,7 @@ pub struct ActivoDTO {
     pub categoria_id: Option<String>,
     pub categoria_nombre: Option<String>, // Para mostrar en la tabla
     pub color: Option<String>,
+    pub color_grupo: Option<String>,
 }
 
 #[derive(Deserialize)]

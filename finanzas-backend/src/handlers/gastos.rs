@@ -14,6 +14,8 @@ struct GastoRow {
     cantidad: f64,
     categoria: String,
     color_categoria: Option<String>,
+    color_grupo: Option<String>,
+    orden_categoria: i32,
     cuenta: String,
     descripcion: Option<String>,
     pendiente: bool,
@@ -36,12 +38,15 @@ pub async fn obtener_gastos(
             ROUND(o.cantidad::numeric, 2)::float8 AS cantidad,
             c.nombre AS categoria,
             c.color AS color_categoria,
+            g.color AS color_grupo,
+            COALESCE(c.orden, 0)::int4 AS orden_categoria,
             cu.nombre AS cuenta,
             o.descripcion AS descripcion,
             COALESCE(o.pendiente, false)::bool AS pendiente,
             COUNT(*) OVER() AS total_filas
         FROM operaciones o
         JOIN categorias c ON o.categoria_id = c.id
+        LEFT JOIN grupos g ON c.grupo_id = g.id
         JOIN cuentas cu ON o.cuenta_id = cu.id
         WHERE o.tipo_operacion_id = 'GASTO'::tipo_operacion_enum
           AND (
@@ -79,6 +84,8 @@ pub async fn obtener_gastos(
         cantidad: (r.cantidad * 100.0).round() / 100.0,
         categoria: r.categoria,
         color_categoria: r.color_categoria,
+        color_grupo: r.color_grupo,
+        orden_categoria: r.orden_categoria,
         cuenta: r.cuenta,
         descripcion: r.descripcion,
         pendiente: r.pendiente,

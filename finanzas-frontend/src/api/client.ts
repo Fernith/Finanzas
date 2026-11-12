@@ -6,6 +6,7 @@ import type {
   CuentaItem,
   CuentaLiquidez,
   FinalizarMetaPayload,
+  GrupoItem,
   HistorialSaldo,
   MetaAhorro,
   NuevoGastoPayload,
@@ -22,6 +23,7 @@ import type {
   UpsertActivoPayload,
   UpsertCategoriaPayload,
   UpsertCuentaPayload,
+  UpsertGrupoPayload,
   UpsertMetaPayload,
   UpsertSuscripcionPayload,
   UpsertTransaccionInversionPayload,
@@ -160,6 +162,25 @@ export const suscripcionesApi = {
 };
 
 export const ajustesApi = {
+  listarGrupos: async (): Promise<GrupoItem[]> => {
+    const { data } = await apiClient.get<GrupoItem[]>('/ajustes/grupos');
+    return data;
+  },
+  crearGrupo: async (payload: UpsertGrupoPayload): Promise<void> => {
+    await apiClient.post('/ajustes/grupos', payload);
+  },
+  modificarGrupo: async (id: string, payload: UpsertGrupoPayload): Promise<void> => {
+    await apiClient.put(`/ajustes/grupos/${id}`, payload);
+  },
+  desactivarGrupo: async (id: string): Promise<void> => {
+    await apiClient.delete(`/ajustes/grupos/${id}`);
+  },
+  activarGrupo: async (id: string): Promise<void> => {
+    await apiClient.put(`/ajustes/grupos/${id}/activar`);
+  },
+  reordenarGrupos: async (payload: ReordenarItem[]): Promise<void> => {
+    await apiClient.put('/ajustes/grupos/reordenar', payload);
+  },
   listarCategorias: async (): Promise<CategoriaItem[]> => {
     const { data } = await apiClient.get<CategoriaItem[]>('/ajustes/categorias');
     return data;

@@ -1,6 +1,42 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
-import { formatearMoneda } from '../../utils/formatters';
+import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
 import type { BarraMediaCategoria } from '../../types';
+
+interface MediaTooltipEntry {
+  value?: number;
+  payload?: { categoria?: string; fill?: string };
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: readonly MediaTooltipEntry[];
+  label?: string | number;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (active && payload && payload.length) {
+    const entry = payload[0];
+    const valor = Number(entry.value ?? 0);
+    const nombreCat = entry.payload?.categoria || String(label ?? '');
+    const bgColor = entry.payload?.fill || '#94a3b8';
+    const textColor = obtenerColorTextoParaFondo(bgColor);
+
+    return (
+      <div className="bg-white dark:bg-[#1a1a1a] p-3 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800/80 z-50 flex items-center gap-4">
+        <span
+          className="px-2 py-0.5 rounded text-xs font-bold shadow-sm border border-black/10"
+          style={{ backgroundColor: bgColor, color: textColor }}
+        >
+          {nombreCat}
+        </span>
+        <span className="font-bold text-neutral-900 dark:text-white text-sm">
+          {formatearMoneda(valor)} €/mes
+        </span>
+      </div>
+    );
+  }
+  return null;
+};
 
 type Props = {
   data: BarraMediaCategoria[];
@@ -19,10 +55,7 @@ export default function GraficoMediaCategorias({ data, colorBorderTheme }: Props
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5e5" className="dark:stroke-neutral-800" />
             <XAxis dataKey="categoria" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#888' }} interval={0} angle={-45} textAnchor="end" height={60} />
             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888' }} tickFormatter={(v) => `${v}€`} />
-            <RechartsTooltip 
-              formatter={(v) => [`${formatearMoneda(Number(v ?? 0))} €/mes`, 'Media']} 
-              contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
-            />
+            <RechartsTooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} content={<CustomTooltip />} />
             {/* El color se inyecta automáticamente gracias a la prop 'fill' de la data */}
             <Bar dataKey="Media" radius={[4, 4, 0, 0]} />
           </BarChart>

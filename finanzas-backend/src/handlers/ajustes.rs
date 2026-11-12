@@ -9,16 +9,19 @@ use crate::dtos::ajustes::*;
 
 // --- CATEGORIAS ---
 pub async fn listar_categorias(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
-    let rows = sqlx::query_as!(
-        CategoriaItemDTO, 
+    let rows: Vec<CategoriaItemDTO> = sqlx::query_as(
         r#"SELECT 
-            c.id::text as "id!", 
-            c.nombre as "nombre!", 
-            c.tipo_operacion_id::text as "tipo_operacion_id!",
-            c.color as "color?", 
-            COALESCE(c.activo, true) as "activo!", 
-            COALESCE(c.orden, 0) as "orden!" 
+            c.id::text as id, 
+            c.nombre as nombre, 
+            c.tipo_operacion_id::text as tipo_operacion_id,
+            c.grupo_id::text as grupo_id,
+            g.nombre as grupo_nombre,
+            c.color as color, 
+            g.color as color_grupo,
+            COALESCE(c.activo, true) as activo, 
+            COALESCE(c.orden, 0) as orden 
            FROM categorias c
+           LEFT JOIN grupos g ON c.grupo_id = g.id
            ORDER BY c.orden ASC, c.nombre ASC"#
     ).fetch_all(&pool).await?;
 
@@ -31,16 +34,29 @@ pub async fn crear_categoria(State(pool): State<PgPool>, Json(payload): Json<Ups
         
     let max_orden = max_orden_opt.unwrap_or(0);
     let orden_final = payload.orden.unwrap_or(max_orden + 1);
+    let grupo_id = payload.grupo_id.as_deref().filter(|s| !s.trim().is_empty());
 
-    sqlx::query("INSERT INTO categorias (nombre, tipo_operacion_id, activo, orden, color) VALUES ($1, $2::tipo_operacion_enum, true, $3, $4)")
-        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(orden_final).bind(&payload.color).execute(&pool).await?;
+    sqlx::query("INSERT INTO categorias (nombre, tipo_operacion_id, grupo_id, activo, orden, color) VALUES ($1, $2::tipo_operacion_enum, $3::uuid, true, $4, $5)")
+        .bind(&payload.nombre)
+        .bind(&payload.tipo_operacion_id)
+        .bind(grupo_id)
+        .bind(orden_final)
+        .bind(&payload.color)
+        .execute(&pool).await?;
 
     Ok((StatusCode::CREATED, "OK"))
 }
 
 pub async fn modificar_categoria(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertCategoriaDTO>) -> Result<impl IntoResponse, AppError> {
-    sqlx::query("UPDATE categorias SET nombre = $1, tipo_operacion_id = $2::tipo_operacion_enum, color = $3 WHERE id = $4::uuid")
-        .bind(&payload.nombre).bind(&payload.tipo_operacion_id).bind(&payload.color).bind(&id).execute(&pool).await?;
+    let grupo_id = payload.grupo_id.as_deref().filter(|s| !s.trim().is_empty());
+
+    sqlx::query("UPDATE categorias SET nombre = $1, tipo_operacion_id = $2::tipo_operacion_enum, grupo_id = $3::uuid, color = COALESCE($4, color) WHERE id = $5::uuid")
+        .bind(&payload.nombre)
+        .bind(&payload.tipo_operacion_id)
+        .bind(grupo_id)
+        .bind(&payload.color)
+        .bind(&id)
+        .execute(&pool).await?;
     Ok((StatusCode::OK, "OK"))
 }
 

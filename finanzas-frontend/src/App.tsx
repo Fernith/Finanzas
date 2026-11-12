@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import { Plus } from 'lucide-react';
 import Navbar from './components/general/Navbar';
 import ModalTransaccion from './components/operaciones/ModalTransaccion';
-import { ConfigProvider } from './context/ConfigContext';
+import { ConfigProvider, useConfig } from './context/ConfigContext';
 import Suscripciones from './pages/Suscripciones';
 
 // Importa aquí tus páginas
@@ -14,6 +14,24 @@ import Inversiones from './pages/Inversiones';
 import Ahorros from './pages/Ahorros';
 import Ajustes from './pages/Ajustes';
 import Liquidez from './pages/Liquidez';
+
+function BotonFlotanteGlobal({ onClick }: { onClick: () => void }) {
+  const { perfil } = useConfig();
+  const clasesColor =
+    perfil === 'Tipo A'
+      ? 'bg-amber-400 shadow-lg hover:bg-amber-400 hover:scale-105 active:scale-95'
+      : 'bg-blue-600 shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:scale-105 active:scale-95 text-white';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 p-4 rounded-full transition-all flex items-center justify-center group ${clasesColor}`}
+      title="Añadir Operación"
+    >
+      <Plus size={28} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
+    </button>
+  );
+}
 
 function App() {
   const [modalGlobalAbierto, setModalGlobalAbierto] = useState(false);
@@ -39,13 +57,7 @@ function App() {
           </main>
 
           {/* BOTÓN FLOTANTE GENÉRICO GLOBAL (FAB) */}
-          <button
-            onClick={() => setModalGlobalAbierto(true)}
-            className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 p-4 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/30 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all flex items-center justify-center group"
-            title="Añadir Operación"
-          >
-            <Plus size={28} strokeWidth={2.5} className="group-hover:rotate-90 transition-transform duration-300" />
-          </button>
+          <BotonFlotanteGlobal onClick={() => setModalGlobalAbierto(true)} />
 
           {/* MODAL GLOBAL (Dispara un evento cuando guarda) */}
           <ModalTransaccion

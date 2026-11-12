@@ -15,7 +15,7 @@ export default function Finanzas() {
   const {
     anioSeleccionado, setAnioSeleccionado, anios, mesesNombres,
     resumenMensual, tablaCategoriasGastos, tablaCategoriasIngresos, 
-    totalGastosAnual, totalIngresosAnual, coloresCategorias,
+    totalGastosAnual, totalIngresosAnual, coloresCategorias, ordenCategorias,
     flujoNetoActual, flujoNetoAnterior, mesActualStats
   } = useBalance();
 
@@ -132,14 +132,14 @@ export default function Finanzas() {
       <Acordeon titulo="Evolución de Gastos" colorBorde="border-red-200 dark:border-red-500/30">
         <div className="space-y-8">
           <TablaBalanceCategorias tablaCategorias={tablaCategoriasGastos} mesesNombres={mesesNombres} resumenMensual={resumenMensual} totalGlobal={totalGastosAnual} tipo="GASTO" />
-          <GraficoBalanceApilado resumenMensual={resumenMensual} coloresCategorias={coloresCategorias} dataKeyPrefix="categoriasGastos" />
+          <GraficoBalanceApilado resumenMensual={resumenMensual} coloresCategorias={coloresCategorias} ordenCategorias={ordenCategorias} dataKeyPrefix="categoriasGastos" />
         </div>
       </Acordeon>
 
       <Acordeon titulo="Evolución de Ingresos" colorBorde="border-emerald-200 dark:border-emerald-500/30">
         <div className="space-y-8">
           <TablaBalanceCategorias tablaCategorias={tablaCategoriasIngresos} mesesNombres={mesesNombres} resumenMensual={resumenMensual} totalGlobal={totalIngresosAnual} tipo="INGRESO" />
-          <GraficoBalanceApilado resumenMensual={resumenMensual} coloresCategorias={coloresCategorias} dataKeyPrefix="categoriasIngresos" />
+          <GraficoBalanceApilado resumenMensual={resumenMensual} coloresCategorias={coloresCategorias} ordenCategorias={ordenCategorias} dataKeyPrefix="categoriasIngresos" />
         </div>
       </Acordeon>
 

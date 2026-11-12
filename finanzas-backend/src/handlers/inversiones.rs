@@ -12,17 +12,18 @@ use crate::dtos::transacciones::*;
 // ==========================================
 
 pub async fn listar_activos(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
-    let rows = sqlx::query_as!(
-        ActivoDTO,
+    let rows = sqlx::query_as::<_, ActivoDTO>(
         r#"
         SELECT 
-            a.ticker as "ticker!", 
-            a.nombre as "nombre!", 
-            a.categoria_id::text as "categoria_id?", 
-            c.nombre as "categoria_nombre?",
-            c.color as "color?"
+            a.ticker AS ticker, 
+            a.nombre AS nombre, 
+            a.categoria_id::text AS categoria_id, 
+            c.nombre AS categoria_nombre,
+            c.color AS color,
+            g.color AS color_grupo
         FROM activos a
         LEFT JOIN categorias c ON a.categoria_id = c.id
+        LEFT JOIN grupos g ON c.grupo_id = g.id
         ORDER BY a.nombre ASC
         "#
     ).fetch_all(&pool).await?;

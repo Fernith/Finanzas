@@ -15,7 +15,7 @@ type Props = {
 };
 
 export default function TransactionTable({ transacciones, onEdit, onDelete, onTogglePendiente, tipo, colorBorderTheme }: Props) {
-  const { usarPendientes } = useConfig();
+  const { usarPendientes, perfil } = useConfig();
   const [sortDesc, setSortDesc] = useState(true);
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,7 +41,8 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
   );
 
   const isIngreso = tipo === 'INGRESO';
-  const totalColumnas = 6 + (isIngreso ? 1 : 0) + (usarPendientes ? 1 : 0);
+  const mostrarPagador = isIngreso && perfil === 'Tipo B';
+  const totalColumnas = 6 + (mostrarPagador ? 1 : 0) + (usarPendientes ? 1 : 0);
   const colsEtiquetaTotal = usarPendientes ? 2 : 1;
   const colsValorTotal = totalColumnas - colsEtiquetaTotal;
   const headerBg = isIngreso ? 'dark:bg-[#07130f] bg-emerald-50' : 'dark:bg-[#1a0f0f] bg-red-50';
@@ -63,7 +64,7 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                 <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 whitespace-nowrap">CANTIDAD</th>
                 <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CATEGORÍA</th>
                 <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">CUENTA</th>
-                {isIngreso && <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">PAGADOR/ENTIDAD</th>}
+                {mostrarPagador && <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">PAGADOR/ENTIDAD</th>}
                 <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300">DESCRIPCIÓN</th>
                 <th className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-300 text-center">ACCIONES</th>
               </tr>
@@ -71,7 +72,7 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
             
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/60">
               {currentItems.map((t) => {
-                const bgCat = t.color_categoria || '#94a3b8';
+                const bgCat = perfil === 'Tipo A' ? (t.color_grupo || '#3b82f6') : (t.color_categoria || '#94a3b8');
                 return (
                   <tr key={t.id} className="odd:bg-transparent even:bg-neutral-50 dark:even:bg-[#161616] hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] transition-colors">
                     {usarPendientes && (
@@ -97,7 +98,7 @@ export default function TransactionTable({ transacciones, onEdit, onDelete, onTo
                     </td>
                     
                     <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]">{t.cuenta}</td>
-                    {isIngreso && <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]">{t.campo_extra_ingreso || ''}</td>}
+                    {mostrarPagador && <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-700 dark:text-neutral-300 truncate max-w-[150px] lg:max-w-[120px] xl:max-w-[150px]">{t.campo_extra_ingreso || ''}</td>}
                     <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-sm text-neutral-500 dark:text-neutral-400 min-w-[200px] lg:min-w-0 max-w-[300px] whitespace-pre-wrap break-words">{t.descripcion || ''}</td>
                     <td className="p-4 lg:px-2.5 lg:py-3.5 xl:px-3.5 text-center">
                       <div className="flex items-center justify-center gap-3">

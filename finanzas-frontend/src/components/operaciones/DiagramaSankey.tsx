@@ -1,6 +1,50 @@
 import { ResponsiveContainer, Sankey, Layer, Rectangle, Tooltip as RechartsTooltip } from 'recharts';
-import { formatearMoneda } from '../../utils/formatters';
+import { formatearMoneda, obtenerColorTextoParaFondo } from '../../utils/formatters';
 import type { SankeyData } from '../../types';
+
+interface SankeyTooltipPayloadItem {
+  name?: string;
+  value?: number;
+  payload?: {
+    fill?: string;
+    payload?: {
+      fill?: string;
+      source?: { name?: string; fill?: string };
+      target?: { name?: string; fill?: string };
+    };
+  };
+}
+
+interface CustomSankeyTooltipProps {
+  active?: boolean;
+  payload?: readonly SankeyTooltipPayloadItem[];
+}
+
+const CustomSankeyTooltip = ({ active, payload }: CustomSankeyTooltipProps) => {
+  if (active && payload && payload.length) {
+    const entry = payload[0];
+    const valor = Number(entry.value ?? 0);
+    const nombreLimpio = String(entry.name ?? 'Flujo').replace(/ - (Gastos|Ingresos)$/, '');
+    const inner = entry.payload?.payload;
+    const bgColor = inner?.source?.fill || inner?.fill || entry.payload?.fill || '#94a3b8';
+    const textColor = obtenerColorTextoParaFondo(bgColor);
+
+    return (
+      <div className="bg-white dark:bg-[#1a1a1a] p-3 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800/80 z-50 flex items-center gap-4">
+        <span
+          className="px-2 py-0.5 rounded text-xs font-bold shadow-sm border border-black/10"
+          style={{ backgroundColor: bgColor, color: textColor }}
+        >
+          {nombreLimpio}
+        </span>
+        <span className="font-bold text-neutral-900 dark:text-white text-sm">
+          {formatearMoneda(valor)} €
+        </span>
+      </div>
+    );
+  }
+  return null;
+};
 
 interface SankeyNodeRenderProps {
   x: number;
@@ -45,7 +89,7 @@ export default function DiagramaSankey({ data, titulo, mensajeVacio, colorBorder
         <div className="flex-1 w-full min-w-0 flex items-center">
           <ResponsiveContainer width="100%" height={alturaMinima}>
             <Sankey data={data} node={renderSankeyNode} nodePadding={nodePadding} margin={{ left: 10, right: 10, top: 15, bottom: 15 }} link={{ stroke: '#cbd5e1', strokeOpacity: 0.3 }}>
-              <RechartsTooltip formatter={(value, name) => [`${formatearMoneda(Number(value ?? 0))} €`, String(name ?? 'Flujo').replace(/ - (Gastos|Ingresos)$/, '')]} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+              <RechartsTooltip content={<CustomSankeyTooltip />} />
             </Sankey>
           </ResponsiveContainer>
         </div>

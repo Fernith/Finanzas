@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Pencil, ArrowUpDown, Trash2 } from 'lucide-react';
+import { useConfig } from '../../context/ConfigContext';
 import { formatearMoneda } from '../../utils/formatters';
 import type { Activo, ActivoConTransacciones, TransaccionInversion } from '../../types';
 
@@ -11,6 +12,7 @@ type Props = {
 };
 
 export default function TablaActivos({ activosConTransacciones, onEditActivo, onEditTransaccion, onDeleteTransaccion }: Props) {
+  const { perfil } = useConfig();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [ordenDescendente, setOrdenDescendente] = useState(true);
 
@@ -56,7 +58,10 @@ export default function TablaActivos({ activosConTransacciones, onEditActivo, on
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <span className="w-3 h-3 rounded-full shadow-inner border border-black/10" style={{ backgroundColor: activo.color || '#ccc' }}></span>
+                        <span
+                          className="w-3 h-3 rounded-full shadow-inner border border-black/10"
+                          style={{ backgroundColor: perfil === 'Tipo A' ? (activo.color_grupo || '#3b82f6') : (activo.color || '#ccc') }}
+                        ></span>
                         <div>
                           <p className="font-bold text-neutral-900 dark:text-white">{activo.nombre}</p>
                           <p className="text-xs font-medium text-neutral-500 uppercase">{activo.ticker}</p>
