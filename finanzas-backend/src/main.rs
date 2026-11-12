@@ -94,6 +94,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/suscripciones", axum::routing::get(handlers::suscripciones::listar_suscripciones).post(handlers::suscripciones::crear_suscripcion))
         .route("/api/suscripciones/:id", axum::routing::put(handlers::suscripciones::modificar_suscripcion).delete(handlers::suscripciones::eliminar_suscripcion))
 
+        // BUDGET
+        .route("/api/budget", axum::routing::get(handlers::budget::obtener_datos_budget))
+        .route("/api/budget/config", axum::routing::put(handlers::budget::guardar_config_budget))
+
         .fallback_service(frontend)
 
         .layer(cors)

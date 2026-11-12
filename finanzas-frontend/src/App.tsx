@@ -14,6 +14,7 @@ import Inversiones from './pages/Inversiones';
 import Ahorros from './pages/Ahorros';
 import Ajustes from './pages/Ajustes';
 import Liquidez from './pages/Liquidez';
+import Budget from './pages/Budget';
 
 function BotonFlotanteGlobal({ onClick }: { onClick: () => void }) {
   const { perfil } = useConfig();
@@ -52,6 +53,7 @@ function App() {
               <Route path="/ahorros" element={<Ahorros />} />
               <Route path="/ajustes" element={<Ajustes />} />
               <Route path="/ahorros/liquidez" element={<Liquidez />} />
+              <Route path="/budget" element={<Budget />} />
               <Route path="/suscripciones" element={<Suscripciones />} />
             </Routes>
           </main>

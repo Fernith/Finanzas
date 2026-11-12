@@ -88,7 +88,7 @@ export default function Suscripciones() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-neutral-800">
-              {suscripciones.map(s => (
+              {[...suscripciones].sort((a, b) => a.fecha_proxima_renovacion.localeCompare(b.fecha_proxima_renovacion)).map(s => (
                 <tr key={s.id} className={`hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors ${!s.activo ? 'opacity-50' : ''}`}>
                   <td className="p-4 font-bold text-slate-800 dark:text-white">{s.nombre} {(!s.activo) && <span className="ml-2 text-[10px] bg-slate-200 dark:bg-neutral-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">INACTIVA</span>}</td>
                   <td className="p-4 font-semibold text-slate-700 dark:text-slate-300">{formatearMoneda(s.cantidad)} €</td>

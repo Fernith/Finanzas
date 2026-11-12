@@ -313,3 +313,48 @@ export interface FinalizarMetaPayload {
   cuenta_id: string;
   categoria_id: string;
 }
+
+// ----------------------------------------------------
+// BUDGET
+// ----------------------------------------------------
+export type ModoIngresoBudget = 'APP' | 'MANUAL';
+
+export interface BudgetCategoriaGastoConfig {
+  categoria_id: string;
+  activo: boolean;
+  monto_fijo: number;
+}
+
+export interface BudgetConfig {
+  modo_ingreso: ModoIngresoBudget;
+  ingreso_manual: number;
+  categorias_ingresos_seleccionadas: string[];
+  ingresos_seleccionados: string[];
+  categorias_gastos: BudgetCategoriaGastoConfig[];
+}
+
+export interface IngresoBudget {
+  id: string;
+  fecha: string;
+  cantidad: number;
+  categoria_id: string;
+  categoria: string;
+  color_categoria?: string | null;
+  color_grupo?: string | null;
+  cuenta: string;
+  descripcion?: string | null;
+  pendiente: boolean;
+}
+
+export interface GastoCategoriaReal {
+  categoria_id: string;
+  total_real: number;
+}
+
+export interface BudgetDatos {
+  config: BudgetConfig;
+  categorias_ingresos: CategoriaItem[];
+  categorias_gastos: CategoriaItem[];
+  ingresos_ultimos_30_dias: IngresoBudget[];
+  gastos_mes_actual: GastoCategoriaReal[];
+}

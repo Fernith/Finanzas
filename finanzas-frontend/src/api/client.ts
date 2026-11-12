@@ -2,6 +2,8 @@ import axios from 'axios';
 import type {
   Activo,
   AjusteItem,
+  BudgetConfig,
+  BudgetDatos,
   CategoriaItem,
   CuentaItem,
   CuentaLiquidez,
@@ -225,5 +227,15 @@ export const ajustesApi = {
   },
   actualizarAjuste: async (payload: AjusteItem): Promise<void> => {
     await apiClient.put('/ajustes', payload);
+  },
+};
+
+export const budgetApi = {
+  obtenerDatos: async (): Promise<BudgetDatos> => {
+    const { data } = await apiClient.get<BudgetDatos>('/budget');
+    return data;
+  },
+  guardarConfig: async (payload: BudgetConfig): Promise<void> => {
+    await apiClient.put('/budget/config', payload);
   },
 };
