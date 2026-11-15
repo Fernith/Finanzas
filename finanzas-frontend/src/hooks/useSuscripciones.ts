@@ -58,14 +58,15 @@ export function useSuscripciones() {
         if (tocaEsteMes) {
           mc = a;
         }
-      } else if (s.periodicidad === '30_DIAS') {
-        m = cantidadNum * (365 / 30) / 12;
-        a = cantidadNum * (365 / 30);
+      } else if (s.periodicidad === '30_DIAS' || s.periodicidad === 'QUINCENAL' || s.periodicidad === 'SEMANAL' || s.periodicidad === 'DIARIA') {
+        const diasIntervalo = s.periodicidad === '30_DIAS' ? 30 : s.periodicidad === 'QUINCENAL' ? 15 : s.periodicidad === 'SEMANAL' ? 7 : 1;
+        a = cantidadNum * (365 / diasIntervalo);
+        m = a / 12;
         if (anioProx === anioActual && mesProx === mesActual) {
-          mc = cantidadNum;
+          mc = cantidadNum * (diasIntervalo < 30 ? Math.floor(30 / diasIntervalo) : 1);
         } else if (s.fecha_inicio <= hoyEsp) {
           const fechaProx = new Date(`${s.fecha_proxima_renovacion}T12:00:00`);
-          fechaProx.setDate(fechaProx.getDate() - 30);
+          fechaProx.setDate(fechaProx.getDate() - diasIntervalo);
           if (fechaProx.getFullYear() === anioActual && fechaProx.getMonth() + 1 === mesActual) {
             mc = cantidadNum;
           }

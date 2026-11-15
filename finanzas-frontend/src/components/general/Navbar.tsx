@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Menu, X, Sun, Moon, Settings, Wallet, TrendingDown, TrendingUp, LineChart, Target, Repeat, PieChart } from 'lucide-react';
+import { Menu, X, Sun, Moon, Settings, Wallet, TrendingDown, TrendingUp, LineChart, Target, Repeat, PieChart, Landmark } from 'lucide-react';
 import { useConfig } from '../../context/ConfigContext';
 
 export default function Navbar() {
@@ -21,6 +21,7 @@ export default function Navbar() {
     { path: '/ahorros', label: 'Ahorros', icon: Target, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/30' },
     { path: '/budget', label: 'Budget', icon: PieChart, color: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-900/30' },
     { path: '/suscripciones', label: 'Suscripciones', icon: Repeat, color: 'text-slate-800 dark:text-white', bg: 'bg-slate-200/50 dark:bg-neutral-800' },
+    { path: '/prestamos', label: 'Préstamos', icon: Landmark, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/30' },
   ];
 
   return (

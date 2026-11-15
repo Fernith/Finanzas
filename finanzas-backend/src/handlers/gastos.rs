@@ -129,7 +129,30 @@ pub async fn actualizar_gasto(State(pool): State<PgPool>, Path(id): Path<String>
 }
 
 pub async fn eliminar_gasto(State(pool): State<PgPool>, Path(id): Path<String>) -> Result<impl IntoResponse, AppError> {
-    sqlx::query!("DELETE FROM operaciones WHERE id = $1::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum", id).execute(&pool).await?;
+    let mut tx = pool.begin().await?;
+
+    let info_prestamo: Option<(Option<String>, f64)> = sqlx::query_as(
+        "SELECT prestamo_id::text, ROUND(cantidad::numeric, 2)::float8 FROM operaciones WHERE id = $1::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum"
+    )
+    .bind(&id)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    sqlx::query!("DELETE FROM operaciones WHERE id = $1::text::uuid AND tipo_operacion_id = 'GASTO'::tipo_operacion_enum", id)
+        .execute(&mut *tx)
+        .await?;
+
+    if let Some((Some(prestamo_id), cantidad)) = info_prestamo {
+        sqlx::query(
+            "UPDATE prestamos SET cantidad_pendiente = LEAST(cantidad_inicial, ROUND((cantidad_pendiente + $2::float8)::numeric, 2)), finalizado = false WHERE id = $1::uuid"
+        )
+        .bind(&prestamo_id)
+        .bind(cantidad)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    tx.commit().await?;
     Ok((StatusCode::OK, "OK"))
 }
 

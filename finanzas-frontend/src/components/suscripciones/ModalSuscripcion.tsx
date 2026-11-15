@@ -67,6 +67,9 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
       if (form.periodicidad === 'MENSUAL') d.setMonth(d.getMonth() + 1);
       else if (form.periodicidad === 'ANUAL') d.setFullYear(d.getFullYear() + 1);
       else if (form.periodicidad === '30_DIAS') d.setDate(d.getDate() + 30);
+      else if (form.periodicidad === 'QUINCENAL') d.setDate(d.getDate() + 15);
+      else if (form.periodicidad === 'SEMANAL') d.setDate(d.getDate() + 7);
+      else if (form.periodicidad === 'DIARIA') d.setDate(d.getDate() + 1);
       const fechaCalculada = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       setForm(prev => ({ ...prev, fecha_proxima_renovacion: fechaCalculada }));
     }
@@ -120,9 +123,12 @@ export default function ModalSuscripcion({ isOpen, onClose, onSuccess, suscripci
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1 dark:text-slate-300">Periodicidad</label>
-              <select value={form.periodicidad} onChange={e => setForm({...form, periodicidad: e.target.value as PeriodicidadSuscripcion})} className="w-full p-2.5 bg-slate-100 dark:bg-neutral-800 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/50 dark:text-white cursor-pointer">
+              <select value={form.periodicidad} onChange={e => setForm({...form, periodicidad: e.target.value as PeriodicidadSuscripcion, fecha_proxima_renovacion: suscripcionAEditar ? form.fecha_proxima_renovacion : ''})} className="w-full p-2.5 bg-slate-100 dark:bg-neutral-800 rounded-lg outline-none focus:ring-2 focus:ring-slate-500/50 dark:text-white cursor-pointer">
                 <option value="MENSUAL">Mensual</option>
                 <option value="ANUAL">Anual</option>
+                <option value="QUINCENAL">Cada 15 Días</option>
+                <option value="SEMANAL">Semanal</option>
+                <option value="DIARIA">Diaria</option>
                 <option value="30_DIAS">Cada 30 Días</option>
               </select>
             </div>

@@ -38,8 +38,15 @@ export default function Suscripciones() {
     }
   };
 
-  const eqMensual = (s: Suscripcion) => s.periodicidad === 'MENSUAL' ? s.cantidad : s.periodicidad === 'ANUAL' ? s.cantidad / 12 : s.cantidad * (365/30) / 12;
-  const eqAnual = (s: Suscripcion) => s.periodicidad === 'ANUAL' ? s.cantidad : s.periodicidad === 'MENSUAL' ? s.cantidad * 12 : s.cantidad * (365/30);
+  const eqAnual = (s: Suscripcion) => {
+    if (s.periodicidad === 'ANUAL') return s.cantidad;
+    if (s.periodicidad === 'MENSUAL') return s.cantidad * 12;
+    if (s.periodicidad === 'QUINCENAL') return s.cantidad * (365 / 15);
+    if (s.periodicidad === 'SEMANAL') return s.cantidad * (365 / 7);
+    if (s.periodicidad === 'DIARIA') return s.cantidad * 365;
+    return s.cantidad * (365 / 30);
+  };
+  const eqMensual = (s: Suscripcion) => s.periodicidad === 'MENSUAL' ? s.cantidad : eqAnual(s) / 12;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

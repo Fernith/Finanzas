@@ -251,9 +251,9 @@ export interface MoverDineroPayload {
 }
 
 // ----------------------------------------------------
-// SUSCRIPCIONES Y METAS DE AHORRO
+// SUSCRIPCIONES, PRESTAMOS Y METAS DE AHORRO
 // ----------------------------------------------------
-export type PeriodicidadSuscripcion = '30_DIAS' | 'MENSUAL' | 'ANUAL';
+export type PeriodicidadSuscripcion = 'MENSUAL' | 'ANUAL' | 'QUINCENAL' | 'SEMANAL' | 'DIARIA' | '30_DIAS';
 
 export interface Suscripcion {
   id: string;
@@ -275,6 +275,50 @@ export interface UpsertSuscripcionPayload {
   fecha_proxima_renovacion: string;
   periodicidad: PeriodicidadSuscripcion;
   activo: boolean;
+}
+
+export interface Prestamo {
+  id: string;
+  nombre: string;
+  cantidad_inicial: number;
+  cantidad_pendiente: number;
+  cuota_periodica: number;
+  periodicidad: PeriodicidadSuscripcion;
+  cuenta_id: string;
+  cuenta_nombre: string;
+  fecha_inicio: string;
+  fecha_proximo_pago: string;
+  fecha_fin?: string | null;
+  finalizado: boolean;
+}
+
+export interface UpsertPrestamoPayload {
+  nombre: string;
+  cantidad_inicial: number;
+  cantidad_pendiente: number;
+  cuota_periodica: number;
+  periodicidad: PeriodicidadSuscripcion;
+  cuenta_id: string;
+  fecha_inicio: string;
+  fecha_proximo_pago: string;
+  fecha_fin: string | null;
+  finalizado?: boolean;
+}
+
+export interface PagoPrestamo {
+  id: string;
+  fecha: string;
+  cantidad: number;
+  cuenta_id: string;
+  cuenta_nombre: string;
+  descripcion?: string | null;
+  es_cuota_prestamo: boolean;
+}
+
+export interface AmortizarPrestamoPayload {
+  fecha: string;
+  cantidad: number;
+  cuenta_id: string;
 }
 
 export interface MovimientoMeta {

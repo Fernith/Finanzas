@@ -7,3 +7,4 @@ pub mod inversiones;
 pub mod liquidez;
 pub mod suscripciones;
 pub mod budget;
+pub mod prestamos;

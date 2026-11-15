@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, User } from 'lucide-react';
-import { ajustesApi, inversionesApi, operacionesApi } from '../../api/client';
+import { X, Calendar, DollarSign, Tag, CreditCard, AlignLeft, User, Landmark } from 'lucide-react';
+import { ajustesApi, inversionesApi, operacionesApi, prestamosApi } from '../../api/client';
 import { useConfig } from '../../context/ConfigContext';
-import { obtenerFechaHoyEsp, redondearMoneda } from '../../utils/formatters';
-import type { Activo, CategoriaItem, CuentaItem, Transaction } from '../../types';
+import { obtenerFechaHoyEsp, redondearMoneda, formatearMoneda } from '../../utils/formatters';
+import type { Activo, CategoriaItem, CuentaItem, Prestamo, Transaction } from '../../types';
 
-export type TipoTransaccion = 'GASTO' | 'INGRESO' | 'INVERSION';
+export type TipoTransaccion = 'GASTO' | 'INGRESO' | 'INVERSION' | 'PRESTAMO';
 
 type ModalProps = {
   isOpen: boolean;
@@ -28,12 +28,14 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
     descripcion: '',
     pendiente: false,
     activo_ticker: '',
+    prestamo_id: '',
     campo_extra_ingreso: ''
   });
 
   const [categorias, setCategorias] = useState<CategoriaItem[]>([]);
   const [cuentas, setCuentas] = useState<CuentaItem[]>([]);
   const [activos, setActivos] = useState<Activo[]>([]);
+  const [prestamos, setPrestamos] = useState<Prestamo[]>([]);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -51,31 +53,36 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
         categoria_id: transaccionAEditar?.categoria_id || '',
         cuenta_id: transaccionAEditar?.cuenta_id || '',
         activo_ticker: '',
+        prestamo_id: '',
         campo_extra_ingreso: transaccionAEditar?.campo_extra_ingreso || ''
       }));
 
       const fetchData = async () => {
         try {
           // Cargamos todos los catálogos en paralelo
-          const [resCat, resCta, resAct] = await Promise.all([
+          const [resCat, resCta, resAct, resPrest] = await Promise.all([
             ajustesApi.listarCategorias(),
             ajustesApi.listarCuentas(),
-            inversionesApi.listarActivos()
+            inversionesApi.listarActivos(),
+            prestamosApi.listar()
           ]);
 
           const activeCat = resCat.filter((c) => c.activo !== false);
-          const activeCta = resCta.filter((c) => c.activo !== false);
+          const activeCta = [...resCta.filter((c) => c.activo !== false)].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+          const activePrest = resPrest.filter((p) => !p.finalizado && p.cantidad_pendiente > 0);
 
           setCategorias(activeCat);
           setCuentas(activeCta);
           setActivos(resAct);
+          setPrestamos(activePrest);
 
           // Asignación segura de IDs por defecto
           setForm(prev => ({
             ...prev,
             categoria_id: prev.categoria_id || (transaccionAEditar ? (activeCat.find((c) => c.nombre === transaccionAEditar.categoria)?.id || '') : ''),
             cuenta_id: prev.cuenta_id || (transaccionAEditar ? (activeCta.find((c) => c.nombre === transaccionAEditar.cuenta)?.id || '') : (activeCta.length > 0 ? activeCta[0].id : '')),
-            activo_ticker: resAct.length > 0 ? resAct[0].ticker : ''
+            activo_ticker: resAct.length > 0 ? resAct[0].ticker : '',
+            prestamo_id: activePrest.length > 0 ? activePrest[0].id : ''
           }));
         } catch (e) {
           console.error('Error cargando catálogos', e);
@@ -91,6 +98,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
   const getTema = () => {
     if (form.tipo === 'GASTO') return { bg: 'bg-red-500', btn: 'from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700', ring: 'focus:ring-red-100 dark:focus:ring-red-900/30', toggle: 'peer-checked:bg-red-500' };
     if (form.tipo === 'INGRESO') return { bg: 'bg-emerald-500', btn: 'from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700', ring: 'focus:ring-emerald-100 dark:focus:ring-emerald-900/30', toggle: 'peer-checked:bg-emerald-500' };
+    if (form.tipo === 'PRESTAMO') return { bg: 'bg-rose-600', btn: 'from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700', ring: 'focus:ring-rose-100 dark:focus:ring-rose-900/30', toggle: 'peer-checked:bg-rose-600' };
     return { bg: 'bg-amber-500', btn: 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600', ring: 'focus:ring-amber-100 dark:focus:ring-amber-900/30', toggle: 'peer-checked:bg-amber-500' };
   };
   
@@ -98,6 +106,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
   const inputClases = `w-full px-3 py-2 bg-slate-50 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl text-sm text-slate-900 dark:text-white outline-none focus:bg-white dark:focus:bg-black focus:ring-2 ${tema.ring} transition-all`;
   
   const categoriasFiltradas = categorias.filter(c => c.tipo_operacion_id === form.tipo);
+  const prestamoSeleccionado = prestamos.find(p => p.id === form.prestamo_id);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -108,7 +117,24 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
     setEnviando(true);
 
     try {
-      if (form.tipo === 'INVERSION') {
+      if (form.tipo === 'PRESTAMO') {
+        if (!form.prestamo_id || !form.cuenta_id) {
+          alert('Selecciona un préstamo y una cuenta.');
+          setEnviando(false);
+          return;
+        }
+        if (prestamoSeleccionado && cantidadLimpia > prestamoSeleccionado.cantidad_pendiente) {
+          alert(`La cantidad máxima para reducir este préstamo es ${formatearMoneda(prestamoSeleccionado.cantidad_pendiente)} €.`);
+          setEnviando(false);
+          return;
+        }
+
+        await prestamosApi.amortizar(form.prestamo_id, {
+          fecha: form.fecha,
+          cantidad: cantidadLimpia,
+          cuenta_id: form.cuenta_id,
+        });
+      } else if (form.tipo === 'INVERSION') {
         if (!form.activo_ticker || !form.cuenta_id) { alert('Selecciona un activo y una cuenta.'); setEnviando(false); return; }
         
         const activoSeleccionado = activos.find(a => a.ticker === form.activo_ticker);
@@ -197,21 +223,21 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           
-          {/* BOTONES DE TIPO (Gastos, Ingresos, Inversión) */}
+          {/* BOTONES DE TIPO (Gastos, Ingresos, Inversión, Préstamo) */}
           {!transaccionAEditar && (
             <div className="flex p-1 bg-slate-100 dark:bg-zinc-900 rounded-xl mb-4 border border-slate-200 dark:border-zinc-800">
-              {(['GASTO', 'INGRESO', 'INVERSION'] as TipoTransaccion[]).map((t) => (
+              {(['GASTO', 'INGRESO', 'INVERSION', 'PRESTAMO'] as TipoTransaccion[]).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setForm(prev => ({...prev, tipo: t, categoria_id: ''}))}
                   className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all capitalize ${
                     form.tipo === t 
-                      ? (t === 'GASTO' ? 'bg-red-500 text-white shadow-md' : t === 'INGRESO' ? 'bg-emerald-500 text-white shadow-md' : 'bg-amber-500 text-white shadow-md') 
+                      ? (t === 'GASTO' ? 'bg-red-500 text-white shadow-md' : t === 'INGRESO' ? 'bg-emerald-500 text-white shadow-md' : t === 'PRESTAMO' ? 'bg-rose-600 text-white shadow-md' : 'bg-amber-500 text-white shadow-md') 
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-zinc-800'
                   }`}
                 >
-                  {t.toLowerCase()}
+                  {t === 'PRESTAMO' ? 'préstamo' : t === 'INVERSION' ? 'inversión' : t.toLowerCase()}
                 </button>
               ))}
             </div>
@@ -224,12 +250,44 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
             </div>
             <div className="w-1/2">
               <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><DollarSign size={16} className="text-slate-400"/> Cantidad (€)</label>
-              <input type="number" step="0.01" min="0.01" required value={form.cantidad} onChange={e => setForm({...form, cantidad: e.target.value})} className={inputClases} placeholder="0.00" />
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                max={form.tipo === 'PRESTAMO' && prestamoSeleccionado ? prestamoSeleccionado.cantidad_pendiente : undefined}
+                required
+                value={form.cantidad}
+                onChange={e => setForm({...form, cantidad: e.target.value})}
+                className={inputClases}
+                placeholder="0.00"
+              />
+              {form.tipo === 'PRESTAMO' && prestamoSeleccionado && (
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, cantidad: String(prestamoSeleccionado.cantidad_pendiente) })}
+                  className="mt-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1"
+                  title="Poner cantidad restante máxima"
+                >
+                  Máx: {formatearMoneda(prestamoSeleccionado.cantidad_pendiente)} €
+                </button>
+              )}
             </div>
           </div>
           
-          {/* CONDICIONAL: ACTIVO (Si es Inversión) vs CATEGORÍA (Si es Gasto/Ingreso) */}
-          {form.tipo === 'INVERSION' ? (
+          {/* CONDICIONAL: PRÉSTAMO vs ACTIVO vs CATEGORÍA */}
+          {form.tipo === 'PRESTAMO' ? (
+            <div>
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><Landmark size={16} className="text-slate-400"/> Préstamo a reducir</label>
+              <select value={form.prestamo_id} onChange={e => setForm({...form, prestamo_id: e.target.value})} className={inputClases}>
+                {prestamos.length === 0 && <option value="" disabled>No hay préstamos pendientes...</option>}
+                {prestamos.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre} (Pendiente: {formatearMoneda(p.cantidad_pendiente)} €)
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : form.tipo === 'INVERSION' ? (
             <div>
               <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><Tag size={16} className="text-slate-400"/> Activo de Inversión</label>
               <select value={form.activo_ticker} onChange={e => setForm({...form, activo_ticker: e.target.value})} className={inputClases}>
@@ -247,7 +305,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
             </div>
           )}
 
-          {/* CUENTA: Aplica a los 3 (Para restar la Inversión) */}
+          {/* CUENTA: Aplica a todos (ordenada por orden) */}
           <div>
             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><CreditCard size={16} className="text-slate-400"/> Cuenta</label>
             <select value={form.cuenta_id} onChange={e => setForm({...form, cuenta_id: e.target.value})} className={inputClases}>
@@ -255,6 +313,13 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
               {cuentas.map(cta => <option key={cta.id} value={cta.id}>{cta.nombre}</option>)}
             </select>
           </div>
+
+          {form.tipo === 'PRESTAMO' && prestamoSeleccionado && (
+            <div className="p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/70 dark:border-rose-900/40 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+              <div><span className="font-semibold">Categoría automática:</span> Préstamos</div>
+              <div><span className="font-semibold">Descripción automática:</span> Reducción préstamo {prestamoSeleccionado.nombre}</div>
+            </div>
+          )}
 
           {form.tipo === 'INGRESO' && perfil === 'Tipo B' && (
             <>
@@ -266,7 +331,7 @@ export default function ModalTransaccion({ isOpen, onClose, onSuccess, transacci
           )}
 
           {/* CONDICIONAL: DESCRIPCIÓN Y PENDIENTE (Solo Gastos e Ingresos) */}
-          {form.tipo !== 'INVERSION' && (
+          {form.tipo !== 'INVERSION' && form.tipo !== 'PRESTAMO' && (
             <>
               <div>
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-1.5"><AlignLeft size={16} className="text-slate-400"/> Descripción</label>

@@ -18,16 +18,20 @@ import type {
   NuevoSaldoPayload,
   OpcionesFinalizar,
   OperacionAnual,
+  PagoPrestamo,
+  Prestamo,
   ReordenarItem,
   ResumenAhorros,
   Suscripcion,
   TransaccionInversion,
   Transaction,
+  AmortizarPrestamoPayload,
   UpsertActivoPayload,
   UpsertCategoriaPayload,
   UpsertCuentaPayload,
   UpsertGrupoPayload,
   UpsertMetaPayload,
+  UpsertPrestamoPayload,
   UpsertSuscripcionPayload,
   UpsertTransaccionInversionPayload,
 } from '../types';
@@ -164,6 +168,29 @@ export const suscripcionesApi = {
   },
   eliminar: async (id: string): Promise<void> => {
     await apiClient.delete(`/suscripciones/${id}`);
+  },
+};
+
+export const prestamosApi = {
+  listar: async (): Promise<Prestamo[]> => {
+    const { data } = await apiClient.get<Prestamo[]>('/prestamos');
+    return data;
+  },
+  crear: async (payload: UpsertPrestamoPayload): Promise<void> => {
+    await apiClient.post('/prestamos', payload);
+  },
+  modificar: async (id: string, payload: UpsertPrestamoPayload): Promise<void> => {
+    await apiClient.put(`/prestamos/${id}`, payload);
+  },
+  eliminar: async (id: string): Promise<void> => {
+    await apiClient.delete(`/prestamos/${id}`);
+  },
+  obtenerHistorial: async (id: string): Promise<PagoPrestamo[]> => {
+    const { data } = await apiClient.get<PagoPrestamo[]>(`/prestamos/${id}/historial`);
+    return data;
+  },
+  amortizar: async (id: string, payload: AmortizarPrestamoPayload): Promise<void> => {
+    await apiClient.post(`/prestamos/${id}/amortizar`, payload);
   },
 };
 

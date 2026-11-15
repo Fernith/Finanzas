@@ -95,6 +95,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/api/suscripciones", axum::routing::get(handlers::suscripciones::listar_suscripciones).post(handlers::suscripciones::crear_suscripcion))
         .route("/api/suscripciones/:id", axum::routing::put(handlers::suscripciones::modificar_suscripcion).delete(handlers::suscripciones::eliminar_suscripcion))
 
+        // PRESTAMOS
+        .route("/api/prestamos", axum::routing::get(handlers::prestamos::listar_prestamos).post(handlers::prestamos::crear_prestamo))
+        .route("/api/prestamos/:id", axum::routing::put(handlers::prestamos::modificar_prestamo).delete(handlers::prestamos::eliminar_prestamo))
+        .route("/api/prestamos/:id/historial", axum::routing::get(handlers::prestamos::obtener_historial_prestamo))
+        .route("/api/prestamos/:id/amortizar", axum::routing::post(handlers::prestamos::amortizar_prestamo))
+
         // BUDGET
         .route("/api/budget", axum::routing::get(handlers::budget::obtener_datos_budget))
         .route("/api/budget/config", axum::routing::put(handlers::budget::guardar_config_budget))
