@@ -40,6 +40,7 @@ export function useAhorros() {
   const eliminarMeta = async (id: string) => {
     try {
       await ahorrosApi.eliminarMeta(id);
+      window.dispatchEvent(new Event('actualizarTransacciones'));
       cargarDatos();
       return true;
     } catch {

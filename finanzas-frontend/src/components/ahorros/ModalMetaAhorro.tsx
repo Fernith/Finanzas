@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Calendar, X } from 'lucide-react';
 import { ahorrosApi } from '../../api/client';
 import { redondearMoneda } from '../../utils/formatters';
 import type { MetaAhorro } from '../../types';
@@ -15,6 +15,7 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
   const [nombre, setNombre] = useState('');
   const [objetivo, setObjetivo] = useState('');
   const [color, setColor] = useState('#10b981'); // Emerald
+  const [fechaFin, setFechaFin] = useState('');
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -23,10 +24,12 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
         setNombre(metaAEditar.nombre);
         setObjetivo(metaAEditar.objetivo.toString());
         setColor(metaAEditar.color);
+        setFechaFin(metaAEditar.fecha_fin || '');
       } else {
         setNombre('');
         setObjetivo('');
         setColor('#10b981');
+        setFechaFin('');
       }
     }
   }, [isOpen, metaAEditar]);
@@ -37,7 +40,12 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
     e.preventDefault();
     setEnviando(true);
 
-    const payload = { nombre, objetivo: redondearMoneda(Number(objetivo)), color };
+    const payload = {
+      nombre,
+      objetivo: redondearMoneda(Number(objetivo)),
+      color,
+      fecha_fin: fechaFin.trim() || null,
+    };
 
     try {
       if (metaAEditar) {
@@ -45,6 +53,7 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
       } else {
         await ahorrosApi.crearMeta(payload);
       }
+      window.dispatchEvent(new Event('actualizarTransacciones'));
       onSuccess();
       onClose();
     } catch { alert('Error al guardar la meta de ahorro.'); } finally { setEnviando(false); }
@@ -78,6 +87,29 @@ export default function ModalMetaAhorro({ isOpen, onClose, onSuccess, metaAEdita
                 <div className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-wider">{color}</div>
               </div>
             </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Calendar size={15} className="text-slate-400" /> Fecha Fin Meta <span className="text-xs font-normal text-slate-400">(Opcional)</span>
+              </label>
+              {fechaFin && (
+                <button
+                  type="button"
+                  onClick={() => setFechaFin('')}
+                  className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+                >
+                  <X size={13} /> Sin fecha
+                </button>
+              )}
+            </div>
+            <input
+              type="date"
+              value={fechaFin}
+              onChange={e => setFechaFin(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900/30 transition-all"
+            />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

@@ -71,6 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // --- RUTAS DE AHORROS ---
         .route("/api/ahorros/metas", axum::routing::get(handlers::ahorros::listar_metas).post(handlers::ahorros::crear_meta))
         .route("/api/ahorros/metas/:id", axum::routing::put(handlers::ahorros::modificar_meta).delete(handlers::ahorros::eliminar_meta))
+        .route("/api/ahorros/metas/:id/descartar-aviso", axum::routing::patch(handlers::ahorros::descartar_aviso_meta))
         .route("/api/ahorros/resumen", axum::routing::get(handlers::ahorros::obtener_resumen))
         .route("/api/ahorros/metas/:id/movimientos", axum::routing::post(handlers::ahorros::agregar_movimiento_meta))
 

@@ -333,6 +333,8 @@ export interface MetaAhorro {
   objetivo: number;
   color: string;
   ahorrado: number;
+  fecha_fin?: string | null;
+  ultimo_aviso_descartado?: string | null;
   movimientos: MovimientoMeta[];
 }
 
@@ -340,6 +342,7 @@ export interface UpsertMetaPayload {
   nombre: string;
   objetivo: number;
   color: string;
+  fecha_fin?: string | null;
 }
 
 export interface NuevoMovimientoMetaPayload {

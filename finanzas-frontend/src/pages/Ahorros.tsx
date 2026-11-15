@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { PiggyBank, Plus, Target } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { PiggyBank, Plus, Target, CalendarClock, Infinity as InfinityIcon } from 'lucide-react';
 import ModalConfirmacion from '../components/general/ModalConfirmacion';
 import ModalMetaAhorro from '../components/ahorros/ModalMetaAhorro';
 import ModalHistorialMeta from '../components/ahorros/ModalHistorialMeta';
@@ -30,6 +30,19 @@ export default function Ahorros() {
   const [modalHistorial, setModalHistorial] = useState<MetaAhorro | null>(null);
   const [modalMovimiento, setModalMovimiento] = useState<{ meta: MetaAhorro, tipo: 'add' | 'withdraw' } | null>(null);
   const [modalFinalizar, setModalFinalizar] = useState<MetaAhorro | null>(null);
+
+  const metasConFecha = useMemo(
+    () =>
+      metas
+        .filter((m): m is MetaAhorro & { fecha_fin: string } => Boolean(m.fecha_fin))
+        .sort((a, b) => a.fecha_fin.localeCompare(b.fecha_fin)),
+    [metas]
+  );
+
+  const metasSinFecha = useMemo(
+    () => metas.filter(m => !m.fecha_fin),
+    [metas]
+  );
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 pb-12 w-full">
@@ -64,20 +77,52 @@ export default function Ahorros() {
             <Plus size={16} /> Añadir Meta
           </button>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {metas.map(m => (
-            <MetaCard 
-              key={m.id} meta={m} 
-              onEdit={(meta) => { setMetaAEditar(meta); setModalOpen(true); }} 
-              onDelete={setItemAEliminar} 
-              onHistory={setModalHistorial} 
-              onAdd={(meta) => setModalMovimiento({ meta, tipo: 'add' })} 
-              onWithdraw={(meta) => setModalMovimiento({ meta, tipo: 'withdraw' })} 
-              onFinish={setModalFinalizar} 
-            />
-          ))}
-        </div>
+
+        {metasConFecha.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <CalendarClock size={16} className="text-purple-500" /> Metas con Fecha Límite
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {metasConFecha.map(m => (
+                <MetaCard 
+                  key={m.id} meta={m} 
+                  onEdit={(meta) => { setMetaAEditar(meta); setModalOpen(true); }} 
+                  onDelete={setItemAEliminar} 
+                  onHistory={setModalHistorial} 
+                  onAdd={(meta) => setModalMovimiento({ meta, tipo: 'add' })} 
+                  onWithdraw={(meta) => setModalMovimiento({ meta, tipo: 'withdraw' })} 
+                  onFinish={setModalFinalizar} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {metasConFecha.length > 0 && metasSinFecha.length > 0 && (
+          <hr className="border-t border-slate-200 dark:border-neutral-800 my-6" />
+        )}
+
+        {metasSinFecha.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
+              <InfinityIcon size={16} className="text-slate-400" /> Metas sin Fecha Límite
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {metasSinFecha.map(m => (
+                <MetaCard 
+                  key={m.id} meta={m} 
+                  onEdit={(meta) => { setMetaAEditar(meta); setModalOpen(true); }} 
+                  onDelete={setItemAEliminar} 
+                  onHistory={setModalHistorial} 
+                  onAdd={(meta) => setModalMovimiento({ meta, tipo: 'add' })} 
+                  onWithdraw={(meta) => setModalMovimiento({ meta, tipo: 'withdraw' })} 
+                  onFinish={setModalFinalizar} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {metas.length > 0 && (

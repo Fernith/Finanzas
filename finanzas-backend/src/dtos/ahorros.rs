@@ -16,6 +16,8 @@ pub struct MetaAhorroDTO {
     pub objetivo: f64,
     pub color: String,
     pub ahorrado: f64,
+    pub fecha_fin: Option<String>,
+    pub ultimo_aviso_descartado: Option<String>,
     pub movimientos: Vec<MovimientoMetaDTO>,
 }
 
@@ -25,6 +27,13 @@ pub struct UpsertMetaDTO {
     pub nombre: String,
     pub objetivo: f64,
     pub color: String,
+    pub fecha_fin: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct DescartarAvisoMetaDTO {
+    pub hito: String,
 }
 
 #[derive(Deserialize)]

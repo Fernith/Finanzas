@@ -29,6 +29,7 @@ export default function ModalMovimientoMeta({ isOpen, onClose, onSuccess, meta, 
     
     try {
       await ahorrosApi.agregarMovimiento(meta.id, { fecha, cantidad: montoFinal });
+      window.dispatchEvent(new Event('actualizarTransacciones'));
       onSuccess();
       onClose();
     } catch { alert('Error al procesar el movimiento'); } finally { setEnviando(false); }

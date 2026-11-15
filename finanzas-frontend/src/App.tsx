@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router';
 import { Plus } from 'lucide-react';
 import Navbar from './components/general/Navbar';
+import AvisosMetasBanner from './components/general/AvisosMetasBanner';
 import ModalTransaccion from './components/operaciones/ModalTransaccion';
 import { ConfigProvider, useConfig } from './context/ConfigContext';
 import Suscripciones from './pages/Suscripciones';
@@ -42,6 +43,7 @@ function App() {
     <ConfigProvider>
       <Router>
         <div className="min-h-screen bg-slate-50 dark:bg-black transition-colors duration-300 relative">
+          <AvisosMetasBanner />
           <Navbar />
           
           

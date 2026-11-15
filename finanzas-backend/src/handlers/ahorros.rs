@@ -62,20 +62,30 @@ pub async fn obtener_resumen(State(pool): State<PgPool>) -> Result<Json<ResumenA
     }))
 }
 
+#[derive(sqlx::FromRow)]
+struct MetaAhorroRow {
+    id: String,
+    nombre: String,
+    objetivo: f64,
+    color: String,
+    fecha_fin: Option<String>,
+    ultimo_aviso_descartado: Option<String>,
+}
+
 // --- 2. GESTIÓN DE METAS ---
 pub async fn listar_metas(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
     // Ya no ordenamos por nombre en el SQL, lo haremos en Rust por porcentaje
-    let metas_db: Vec<(String, String, f64, String)> = sqlx::query_as(
-        "SELECT id::text, nombre, ROUND(objetivo::numeric, 2)::float8, color FROM metas_ahorro"
+    let metas_db: Vec<MetaAhorroRow> = sqlx::query_as(
+        "SELECT id::text AS id, nombre, ROUND(objetivo::numeric, 2)::float8 AS objetivo, color, fecha_fin::text AS fecha_fin, ultimo_aviso_descartado FROM metas_ahorro"
     ).fetch_all(&pool).await?;
     
     let mut resultado = Vec::new();
 
-    for (id, nombre, objetivo, color) in metas_db {
+    for meta in metas_db {
         let movs: Vec<(String, String, f64)> = sqlx::query_as(
             "SELECT id::text, fecha::text, ROUND(cantidad::numeric, 2)::float8 FROM movimientos_metas WHERE meta_id = $1::uuid ORDER BY fecha DESC"
         )
-        .bind(&id)
+        .bind(&meta.id)
         .fetch_all(&pool).await?;
         
         let mut ahorrado = 0.0;
@@ -86,8 +96,17 @@ pub async fn listar_metas(State(pool): State<PgPool>) -> Result<impl IntoRespons
             movimientos_dto.push(MovimientoMetaDTO { id: mov_id, fecha, cantidad: cantidad_redondeada });
         }
 
-        let objetivo_redondeado = (objetivo * 100.0).round() / 100.0;
-        resultado.push(MetaAhorroDTO { id, nombre, objetivo: objetivo_redondeado, color, ahorrado, movimientos: movimientos_dto });
+        let objetivo_redondeado = (meta.objetivo * 100.0).round() / 100.0;
+        resultado.push(MetaAhorroDTO {
+            id: meta.id,
+            nombre: meta.nombre,
+            objetivo: objetivo_redondeado,
+            color: meta.color,
+            ahorrado,
+            fecha_fin: meta.fecha_fin,
+            ultimo_aviso_descartado: meta.ultimo_aviso_descartado,
+            movimientos: movimientos_dto,
+        });
     }
 
     // --- NUEVO: ORDENACIÓN POR PORCENTAJE ---
@@ -106,15 +125,62 @@ pub async fn listar_metas(State(pool): State<PgPool>) -> Result<impl IntoRespons
 
 pub async fn crear_meta(State(pool): State<PgPool>, Json(payload): Json<UpsertMetaDTO>) -> Result<impl IntoResponse, AppError> {
     let objetivo_redondeado = (payload.objetivo * 100.0).round() / 100.0;
-    sqlx::query("INSERT INTO metas_ahorro (nombre, objetivo, color) VALUES ($1, ROUND($2::float8::numeric, 2), $3)")
-        .bind(&payload.nombre).bind(objetivo_redondeado).bind(&payload.color).execute(&pool).await?;
+    let fecha_fin_limpia = payload
+        .fecha_fin
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    sqlx::query("INSERT INTO metas_ahorro (nombre, objetivo, color, fecha_fin) VALUES ($1, ROUND($2::float8::numeric, 2), $3, $4::date)")
+        .bind(&payload.nombre)
+        .bind(objetivo_redondeado)
+        .bind(&payload.color)
+        .bind(fecha_fin_limpia)
+        .execute(&pool)
+        .await?;
     Ok((StatusCode::CREATED, "OK"))
 }
 
 pub async fn modificar_meta(State(pool): State<PgPool>, Path(id): Path<String>, Json(payload): Json<UpsertMetaDTO>) -> Result<impl IntoResponse, AppError> {
     let objetivo_redondeado = (payload.objetivo * 100.0).round() / 100.0;
-    sqlx::query("UPDATE metas_ahorro SET nombre = $1, objetivo = ROUND($2::float8::numeric, 2), color = $3 WHERE id = $4::uuid")
-        .bind(&payload.nombre).bind(objetivo_redondeado).bind(&payload.color).bind(&id).execute(&pool).await?;
+    let fecha_fin_limpia = payload
+        .fecha_fin
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty());
+    sqlx::query(
+        r#"UPDATE metas_ahorro
+           SET nombre = $1,
+               objetivo = ROUND($2::float8::numeric, 2),
+               color = $3,
+               ultimo_aviso_descartado = CASE
+                   WHEN fecha_fin IS DISTINCT FROM $4::date THEN NULL
+                   ELSE ultimo_aviso_descartado
+               END,
+               fecha_fin = $4::date
+           WHERE id = $5::uuid"#
+    )
+    .bind(&payload.nombre)
+    .bind(objetivo_redondeado)
+    .bind(&payload.color)
+    .bind(fecha_fin_limpia)
+    .bind(&id)
+    .execute(&pool)
+    .await?;
+    Ok((StatusCode::OK, "OK"))
+}
+
+pub async fn descartar_aviso_meta(
+    State(pool): State<PgPool>,
+    Path(id): Path<String>,
+    Json(payload): Json<DescartarAvisoMetaDTO>,
+) -> Result<impl IntoResponse, AppError> {
+    let hito_limpio = payload.hito.trim();
+    let valor = if hito_limpio.is_empty() { None } else { Some(hito_limpio) };
+    sqlx::query("UPDATE metas_ahorro SET ultimo_aviso_descartado = $1 WHERE id = $2::uuid")
+        .bind(valor)
+        .bind(&id)
+        .execute(&pool)
+        .await?;
     Ok((StatusCode::OK, "OK"))
 }
 

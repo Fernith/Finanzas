@@ -1,4 +1,4 @@
-import { Pencil, Trash2, History, ArrowDownToLine, ArrowUpFromLine, Flag } from 'lucide-react';
+import { Pencil, Trash2, History, ArrowDownToLine, ArrowUpFromLine, Flag, Calendar } from 'lucide-react';
 import { formatearMoneda } from '../../utils/formatters';
 import type { MetaAhorro } from '../../types';
 
@@ -14,13 +14,23 @@ type MetaCardProps = {
 
 export default function MetaCard({ meta, onEdit, onDelete, onHistory, onAdd, onWithdraw, onFinish }: MetaCardProps) {
   const porcentaje = Math.min(100, (meta.ahorrado / meta.objetivo) * 100);
+  const fechaFormateada = meta.fecha_fin
+    ? meta.fecha_fin.split('-').reverse().join('/')
+    : null;
 
   return (
     <div className="bg-white dark:bg-neutral-900 border rounded-2xl shadow-sm overflow-hidden flex flex-col p-5" style={{ borderColor: meta.color }}>
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full border border-black/10" style={{ backgroundColor: meta.color }}></span>
-          <h3 className="font-bold text-slate-800 dark:text-slate-200">{meta.nombre}</h3>
+          <span className="w-3 h-3 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: meta.color }}></span>
+          <div>
+            <h3 className="font-bold text-slate-800 dark:text-slate-200">{meta.nombre}</h3>
+            {fechaFormateada && (
+              <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-0.5">
+                <Calendar size={11} /> Límite: {fechaFormateada}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex gap-1">
           <button onClick={() => onEdit(meta)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-lg"><Pencil size={15}/></button>

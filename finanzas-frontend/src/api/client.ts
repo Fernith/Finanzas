@@ -100,6 +100,9 @@ export const ahorrosApi = {
   eliminarMeta: async (id: string): Promise<void> => {
     await apiClient.delete(`/ahorros/metas/${id}`);
   },
+  descartarAviso: async (metaId: string, hito: string): Promise<void> => {
+    await apiClient.patch(`/ahorros/metas/${metaId}/descartar-aviso`, { hito });
+  },
   agregarMovimiento: async (metaId: string, payload: NuevoMovimientoMetaPayload): Promise<void> => {
     await apiClient.post(`/ahorros/metas/${metaId}/movimientos`, payload);
   },
