@@ -11,6 +11,7 @@ import type {
   GrupoItem,
   HistorialSaldo,
   MetaAhorro,
+  MoverDineroPayload,
   NuevoGastoPayload,
   NuevoIngresoPayload,
   NuevoMovimientoMetaPayload,
@@ -118,6 +119,9 @@ export const liquidezApi = {
   },
   registrarSaldo: async (payload: NuevoSaldoPayload): Promise<void> => {
     await apiClient.post('/liquidez/saldos', payload);
+  },
+  moverDinero: async (payload: MoverDineroPayload): Promise<void> => {
+    await apiClient.post('/liquidez/mover', payload);
   },
 };
 

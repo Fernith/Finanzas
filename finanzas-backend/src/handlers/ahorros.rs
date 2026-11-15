@@ -9,20 +9,38 @@ pub async fn obtener_resumen(State(pool): State<PgPool>) -> Result<Json<ResumenA
         "SELECT COALESCE(ROUND(SUM(euros_invertidos)::numeric, 2), 0)::float8 FROM transacciones"
     ).fetch_one(&pool).await?;
 
-    let dinero_liquido: f64 = sqlx::query_scalar!(
+    let dinero_liquido: f64 = sqlx::query_scalar(
         r#"
-        WITH UltimoSaldo AS (
-            SELECT cuenta_id, cantidad as saldo_inicial, fecha as fecha_saldo,
-                   -- AQUÍ DEVOLVEMOS EL CREATED_AT PARA EL DESEMPATE
+        WITH UltimoActualizar AS (
+            SELECT cuenta_id, cantidad::float8 as saldo_base, fecha as fecha_base,
                    ROW_NUMBER() OVER(PARTITION BY cuenta_id ORDER BY fecha DESC, created_at DESC) as rn
             FROM saldos_cuentas
+            WHERE COALESCE(accion, 'actualizar') = 'actualizar'
+        ),
+        BaseActualizar AS (
+            SELECT cuenta_id, saldo_base, fecha_base FROM UltimoActualizar WHERE rn = 1
+        ),
+        MovimientosPosteriores AS (
+            SELECT sc.cuenta_id,
+                   SUM(sc.cantidad)::float8 as variacion_movimientos
+            FROM saldos_cuentas sc
+            LEFT JOIN BaseActualizar b ON sc.cuenta_id = b.cuenta_id
+            WHERE sc.accion IN ('agregar', 'quitar')
+              AND (b.fecha_base IS NULL OR sc.fecha >= b.fecha_base)
+            GROUP BY sc.cuenta_id
         ),
         SaldosActuales AS (
-            SELECT cuenta_id, saldo_inicial, fecha_saldo FROM UltimoSaldo WHERE rn = 1
+            SELECT c.id as cuenta_id,
+                   (COALESCE(b.saldo_base, 0.0) + COALESCE(m.variacion_movimientos, 0.0))::float8 as saldo_inicial,
+                   b.fecha_base as fecha_saldo
+            FROM cuentas c
+            LEFT JOIN BaseActualizar b ON c.id = b.cuenta_id
+            LEFT JOIN MovimientosPosteriores m ON c.id = m.cuenta_id
+            WHERE c.activo = true
         ),
         OperacionesPosteriores AS (
             SELECT o.cuenta_id, 
-                   SUM(CASE WHEN o.tipo_operacion_id = 'INGRESO' THEN o.cantidad ELSE -o.cantidad END) as variacion
+                   SUM(CASE WHEN o.tipo_operacion_id = 'INGRESO' THEN o.cantidad ELSE -o.cantidad END)::float8 as variacion
             FROM operaciones o
             LEFT JOIN SaldosActuales s ON o.cuenta_id = s.cuenta_id
             WHERE o.pendiente = false 
@@ -30,7 +48,7 @@ pub async fn obtener_resumen(State(pool): State<PgPool>) -> Result<Json<ResumenA
               AND (s.fecha_saldo IS NULL OR o.fecha >= s.fecha_saldo)
             GROUP BY o.cuenta_id
         )
-        SELECT COALESCE(SUM(COALESCE(s.saldo_inicial, 0.0) + COALESCE(op.variacion, 0.0)), 0.0)::float as "total_liquido!"
+        SELECT COALESCE(SUM(COALESCE(s.saldo_inicial, 0.0) + COALESCE(op.variacion, 0.0)), 0.0)::float8
         FROM cuentas c
         LEFT JOIN SaldosActuales s ON c.id = s.cuenta_id
         LEFT JOIN OperacionesPosteriores op ON c.id = op.cuenta_id

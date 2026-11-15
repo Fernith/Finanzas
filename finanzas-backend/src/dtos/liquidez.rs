@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize)]
+#[derive(Serialize, sqlx::FromRow)]
 #[serde(rename_all = "snake_case")]
 pub struct CuentaLiquidezDTO {
     pub cuenta_id: String,
@@ -11,12 +11,13 @@ pub struct CuentaLiquidezDTO {
     pub saldo_calculado: f64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, sqlx::FromRow)]
 #[serde(rename_all = "snake_case")]
 pub struct HistorialSaldoDTO { 
     pub id: String, 
     pub fecha: String, 
-    pub cantidad: f64 
+    pub cantidad: f64,
+    pub accion: String,
 }
 
 #[derive(Deserialize)]
@@ -25,4 +26,13 @@ pub struct NuevoSaldoDTO {
     pub cuenta_id: String, 
     pub fecha: String, 
     pub cantidad: f64 
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct MoverDineroDTO {
+    pub cuenta_origen_id: String,
+    pub cuenta_destino_id: String,
+    pub fecha: String,
+    pub cantidad: f64,
 }

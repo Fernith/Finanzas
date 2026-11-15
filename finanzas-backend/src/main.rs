@@ -84,6 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // --- RUTAS DE LIQUIDEZ ---
         .route("/api/liquidez/saldos", axum::routing::get(handlers::liquidez::obtener_saldos_actuales).post(handlers::liquidez::registrar_saldo))
         .route("/api/liquidez/saldos/:cuenta_id", axum::routing::get(handlers::liquidez::obtener_historial_cuenta))
+        .route("/api/liquidez/mover", axum::routing::post(handlers::liquidez::mover_dinero))
         .route("/api/ahorros/opciones-finalizar", axum::routing::get(handlers::ahorros::opciones_finalizar))
         .route("/api/ahorros/metas/:id/finalizar", axum::routing::post(handlers::ahorros::finalizar_meta))
 

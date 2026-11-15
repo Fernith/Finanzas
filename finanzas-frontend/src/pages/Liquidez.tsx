@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Coins, RefreshCw, History, ArrowRight, ChevronLeft } from 'lucide-react';
+import { Coins, RefreshCw, History, ArrowRight, ArrowLeftRight, ChevronLeft } from 'lucide-react';
 import { formatearMoneda } from '../utils/formatters';
 import type { CuentaLiquidez } from '../types';
 import ModalActualizarSaldo from '../components/liquidez/ModalActualizarSaldo';
 import ModalHistorialSaldo from '../components/liquidez/ModalHistorialSaldo';
+import ModalMoverDinero from '../components/liquidez/ModalMoverDinero';
 import { useLiquidez } from '../hooks/useLiquidez';
 
 export default function Liquidez() {
@@ -12,6 +13,7 @@ export default function Liquidez() {
   
   const [modalActualizar, setModalActualizar] = useState<CuentaLiquidez | null>(null);
   const [modalHistorial, setModalHistorial] = useState<CuentaLiquidez | null>(null);
+  const [modalMover, setModalMover] = useState(false);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12 w-full max-w-[1400px] mx-auto">
@@ -32,6 +34,15 @@ export default function Liquidez() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Fondo Líquido Total</p>
           <p className="text-3xl font-black text-blue-600 dark:text-blue-400">{formatearMoneda(totalCalculado)} €</p>
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setModalMover(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md shadow-blue-500/10 active:scale-95 transition-all"
+        >
+          <ArrowLeftRight size={16} /> Traspaso entre cuentas
+        </button>
       </div>
 
       <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-blue-500/30 rounded-2xl shadow-sm overflow-hidden">
@@ -93,6 +104,7 @@ export default function Liquidez() {
 
       <ModalActualizarSaldo isOpen={!!modalActualizar} onClose={() => setModalActualizar(null)} onSuccess={cargarCuentas} cuenta={modalActualizar} />
       <ModalHistorialSaldo isOpen={!!modalHistorial} onClose={() => setModalHistorial(null)} cuenta={modalHistorial} />
+      <ModalMoverDinero isOpen={modalMover} onClose={() => setModalMover(false)} onSuccess={cargarCuentas} cuentas={cuentas} />
     </div>
   );
 }

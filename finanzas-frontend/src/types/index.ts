@@ -219,6 +219,8 @@ export interface ActivoConTransacciones extends Activo {
 // ----------------------------------------------------
 // LIQUIDEZ
 // ----------------------------------------------------
+export type AccionSaldo = 'actualizar' | 'agregar' | 'quitar';
+
 export interface CuentaLiquidez {
   cuenta_id: string;
   nombre: string;
@@ -232,10 +234,18 @@ export interface HistorialSaldo {
   id: string;
   fecha: string;
   cantidad: number;
+  accion: AccionSaldo;
 }
 
 export interface NuevoSaldoPayload {
   cuenta_id: string;
+  fecha: string;
+  cantidad: number;
+}
+
+export interface MoverDineroPayload {
+  cuenta_origen_id: string;
+  cuenta_destino_id: string;
   fecha: string;
   cantidad: number;
 }
